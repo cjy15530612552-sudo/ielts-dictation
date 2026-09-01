@@ -1,0 +1,61 @@
+export function WordInput({
+  value,
+  index,
+  width,
+  active,
+  disabled,
+  inputRef,
+  onChange,
+  onFocus,
+  onMove,
+  onSubmit,
+  onReplay,
+  onStop,
+}) {
+  function handleKeyDown(event) {
+    if (event.key === " ") {
+      event.preventDefault();
+      onMove(1);
+    } else if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      onMove(-1);
+    } else if (event.key === "ArrowRight") {
+      event.preventDefault();
+      onMove(1);
+    } else if (event.key === "Backspace" && value.length === 0) {
+      event.preventDefault();
+      onMove(-1);
+    } else if (event.key === "Tab") {
+      event.preventDefault();
+      event.stopPropagation();
+      onReplay();
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      onSubmit(index);
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      onStop();
+    }
+  }
+
+  return (
+    <div className="word-input-wrap" style={{ "--slot-width": `${width}px` }}>
+      <input
+        ref={inputRef}
+        className={`word-input${active ? " is-active" : ""}`}
+        type="text"
+        value={value}
+        aria-label={`第 ${index + 1} 个单词`}
+        autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="off"
+        spellCheck={false}
+        disabled={disabled}
+        onFocus={onFocus}
+        onChange={(event) => onChange(event.target.value.replace(/\s+/g, ""))}
+        onKeyDown={handleKeyDown}
+      />
+    </div>
+  );
+}

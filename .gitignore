@@ -1,0 +1,33 @@
+# Dependencies and build output
+node_modules/
+dist/
+backend/.venv/
+
+# Secrets: examples are intentionally retained
+.env
+.env.*
+backend/.env
+backend/.env.*
+!.env.example
+!backend/.env.example
+
+# Runtime data and user content
+backend/data/
+backend/storage/
+qa/
+work/
+design-qa.md
+scripts/make-comparison.py
+AGENTS.md
+
+# Caches and local tooling
+*.log
+*.bak
+.pytest_cache/
+backend/.pytest_cache/
+**/__pycache__/
+.codex/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

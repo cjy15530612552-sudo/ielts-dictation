@@ -1,0 +1,31 @@
+{
+  "name": "ielts-dictation",
+  "version": "1.0.0",
+  "description": "Self-hosted IELTS transcript recognition, TTS generation, dictation practice, and vocabulary app.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cjy15530612552-sudo/ielts-dictation.git"
+  },
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && node scripts/prepare-sites-build.mjs",
+    "preview": "vite preview",
+    "test": "node --test tests/alignTokens.test.mjs tests/mockSentences.test.mjs tests/formatLocalTime.test.mjs",
+    "test:sites": "node --test tests/sites-worker.test.mjs",
+    "test:visual": "node scripts/visual-qa.mjs && node scripts/transcript-flow-qa.mjs && node scripts/tts-playground-qa.mjs && node scripts/ai-settings-qa.mjs"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "5.0.4",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "react-icons": "^5.5.0",
+    "react-router-dom": "^7.18.3",
+    "vite": "6.4.2"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.55.0"
+  }
+}
