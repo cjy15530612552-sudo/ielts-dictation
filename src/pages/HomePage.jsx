@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { PiArrowCounterClockwise, PiArrowRight, PiBookOpen, PiGear, PiPlus } from "react-icons/pi";
-import { listPractices, listVocabulary, restartPractice } from "../api/appApi.js";
+import { listPractices, listVocabularyGroups, restartPractice } from "../api/appApi.js";
 import { AppHeader } from "../components/AppHeader.jsx";
 import { formatLocalTime } from "../utils/formatLocalTime.js";
 
@@ -9,13 +9,13 @@ export function HomePage() {
   const location = useLocation();
   const navigate = useNavigate();
   const [practices, setPractices] = useState([]);
-  const [words, setWords] = useState([]);
+  const [vocabularyGroups, setVocabularyGroups] = useState([]);
   const [error, setError] = useState("");
   const [restartingId, setRestartingId] = useState(null);
 
   useEffect(() => {
-    Promise.all([listPractices(), listVocabulary(8)])
-      .then(([practiceItems, wordItems]) => { setPractices(practiceItems); setWords(wordItems); })
+    Promise.all([listPractices(), listVocabularyGroups()])
+      .then(([practiceItems, groupItems]) => { setPractices(practiceItems); setVocabularyGroups(groupItems); })
       .catch((requestError) => setError(requestError.message));
   }, []);
 
@@ -76,10 +76,17 @@ export function HomePage() {
 
       <section className="home-section vocabulary-preview">
         <div className="home-section-heading"><div><h2>收藏单词</h2><p>最近收藏</p></div><Link to="/vocabulary">查看全部 <PiArrowRight /></Link></div>
-        {words.length === 0 ? (
+        {vocabularyGroups.length === 0 ? (
           <div className="home-empty compact"><h3>还没有收藏单词</h3><p>训练过程中点击单词并按 ☆，即可加入单词本。</p></div>
         ) : (
-          <div className="word-preview-grid">{words.map((word) => <article key={word.id}><h3>{word.word}</h3><p>{word.phonetic_uk}</p><strong>{word.meaning_zh}</strong></article>)}</div>
+          <div className="word-preview-grid">{vocabularyGroups.map((group) => (
+            <Link className="vocabulary-group-card" key={group.practice_id || "unassigned"} to={group.practice_id ? `/vocabulary?practiceId=${encodeURIComponent(group.practice_id)}` : "/vocabulary?unassigned=1"}>
+              <span>来源练习</span>
+              <h3>{group.practice_name || "未归类收藏"}</h3>
+              <p>{group.word_count} 个收藏单词</p>
+              <strong>查看词表 <PiArrowRight /></strong>
+            </Link>
+          ))}</div>
         )}
       </section>
     </main>

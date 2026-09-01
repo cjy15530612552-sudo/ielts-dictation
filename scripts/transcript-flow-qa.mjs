@@ -68,13 +68,24 @@ async function createPage(viewport) {
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ word: body.word, lemma: body.word.toLowerCase(), phonetic_uk: "/ɡʊd/", part_of_speech: "adjective", meaning_zh: "好的", meaning_in_context: "这里是礼貌问候的一部分" }) });
   });
   await page.route("**/api/vocabulary*", async (route) => {
+    const url = new URL(route.request().url());
     if (route.request().method() === "POST") {
       const body = route.request().postDataJSON();
       const item = { ...body, id: "favorite-1", created_at: "2026-08-31T00:00:00Z", practice_name: "剑雅18 Test 1 Part 4" };
       favorites = [item];
       return route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ item, created: true }) });
     }
-    return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(favorites) });
+    if (url.pathname.endsWith("/groups")) {
+      const groups = favorites.length ? [{ practice_id: "practice-qa", practice_name: "剑雅18 Test 1 Part 4", word_count: favorites.length, updated_at: favorites[0].created_at }] : [];
+      return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(groups) });
+    }
+    const practiceId = url.searchParams.get("practice_id");
+    const filtered = practiceId ? favorites.filter((item) => item.practice_id === practiceId) : favorites;
+    return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(filtered) });
+  });
+  await page.route("**/api/vocabulary/groups", async (route) => {
+    const groups = favorites.length ? [{ practice_id: "practice-qa", practice_name: "剑雅18 Test 1 Part 4", word_count: favorites.length, updated_at: favorites[0].created_at }] : [];
+    return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(groups) });
   });
   await page.route("**/api/transcript/upload", async (route) => route.fulfill({
     status: 201, contentType: "application/json", body: JSON.stringify(session("uploaded", null)),
@@ -142,6 +153,15 @@ await desktop.getByRole("button", { name: "Good" }).click();
 await desktop.getByRole("dialog", { name: "Good 单词解释" }).waitFor();
 await desktop.getByRole("button", { name: "收藏单词" }).click();
 await desktop.getByText("已加入单词本").waitFor();
+await desktop.goto(baseUrl, { waitUntil: "domcontentloaded" });
+const groupCard = desktop.locator(".vocabulary-group-card", { hasText: "剑雅18 Test 1 Part 4" });
+await groupCard.waitFor();
+await desktop.screenshot({ path: outputPath("home-vocabulary-groups.png"), fullPage: true });
+await groupCard.click();
+await desktop.waitForURL("**/vocabulary?practiceId=practice-qa");
+await desktop.getByRole("heading", { name: "剑雅18 Test 1 Part 4" }).waitFor();
+await desktop.getByRole("heading", { name: "Good" }).waitFor();
+await desktop.screenshot({ path: outputPath("practice-vocabulary.png"), fullPage: true });
 
 const mobile = await createPage({ width: 390, height: 844 });
 await mobile.goto(`${baseUrl}/practice/new`, { waitUntil: "domcontentloaded" });
@@ -158,7 +178,7 @@ if ((await linkage.getByLabel("IELTS Mode").inputValue()) !== "part3") throw new
 
 await writeFile(outputPath("transcript-browser-check.json"), JSON.stringify({
   routes: ["/practice/new", "/transcript/session-qa/review", "/"],
-  validated: ["1-6 file limit", "practice naming", "Part persistence", "Part-to-Voice-Lab linkage", "thumbnail order", "analyze navigation", "editable transcript", "structured JSON", "confirmation save", "home insertion", "practice restart", "practice settings return to transcript review", "progress resume route", "context word card", "favorite save", "mobile overflow"],
+  validated: ["1-6 file limit", "practice naming", "Part persistence", "Part-to-Voice-Lab linkage", "thumbnail order", "analyze navigation", "editable transcript", "structured JSON", "confirmation save", "home insertion", "practice restart", "practice settings return to transcript review", "progress resume route", "context word card", "favorite save", "practice vocabulary grouping", "practice vocabulary filtering", "mobile overflow"],
   consoleErrors: errors,
 }, null, 2));
 await browser.close();

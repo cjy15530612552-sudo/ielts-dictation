@@ -143,6 +143,35 @@ def test_practices_are_sorted_by_updated_at(tmp_path: Path):
     assert ended["last_completed_at"] is not None
 
 
+def test_vocabulary_is_grouped_and_filtered_per_practice(tmp_path: Path):
+    client, _ = make_client(tmp_path)
+    first_practice = client.post("/api/practices", json={"name": "New Zealand Architecture"}).json()
+    second_practice = client.post("/api/practices", json={"name": "Library Tour"}).json()
+    base = {
+        "word": "design", "lemma": "design", "phonetic_uk": "/dɪˈzaɪn/",
+        "part_of_speech": "noun", "meaning_zh": "设计", "meaning_in_context": "建筑设计",
+        "source_sentence": "The design reflects local conditions.",
+    }
+    first = client.post("/api/vocabulary", json={**base, "practice_id": first_practice["id"]}).json()
+    second = client.post("/api/vocabulary", json={**base, "practice_id": second_practice["id"]}).json()
+    duplicate = client.post("/api/vocabulary", json={**base, "practice_id": first_practice["id"]}).json()
+    assert first["created"] is True
+    assert second["created"] is True
+    assert first["item"]["id"] != second["item"]["id"]
+    assert duplicate["created"] is False
+
+    filtered = client.get("/api/vocabulary", params={"practice_id": first_practice["id"]}).json()
+    assert len(filtered) == 1
+    assert filtered[0]["practice_name"] == "New Zealand Architecture"
+    groups = client.get("/api/vocabulary/groups").json()
+    assert {(item["practice_name"], item["word_count"]) for item in groups} == {
+        ("New Zealand Architecture", 1), ("Library Tour", 1),
+    }
+    assert client.get(
+        "/api/vocabulary", params={"practice_id": first_practice["id"], "unassigned": True}
+    ).status_code == 400
+
+
 def test_legacy_sentence_audio_is_generated_on_first_play_request(tmp_path: Path):
     client, _ = make_client(tmp_path)
     practice = client.post("/api/practices", json={"name": "Legacy", "part": "part2"}).json()

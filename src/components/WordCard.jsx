@@ -15,10 +15,10 @@ export function WordCard({ word, sentence, practiceId, onClose, initialExplanati
     async function load() {
       try {
         const result = initialExplanation ?? await explainWord(word, sentence);
-        const items = await listVocabulary();
+        const items = await listVocabulary(null, practiceId || null, !practiceId);
         if (cancelled) return;
         setExplanation(result);
-        setFavorite(items.find((item) => item.lemma.toLowerCase() === result.lemma.toLowerCase() && item.meaning_zh === result.meaning_zh) ?? null);
+        setFavorite(items.find((item) => item.lemma.toLowerCase() === result.lemma.toLowerCase() && item.meaning_zh === result.meaning_zh && (item.practice_id || null) === (practiceId || null)) ?? null);
         setStatus("ready");
       } catch (requestError) {
         if (!cancelled) { setError(requestError.message); setStatus("error"); }
@@ -26,7 +26,7 @@ export function WordCard({ word, sentence, practiceId, onClose, initialExplanati
     }
     load();
     return () => { cancelled = true; };
-  }, [word, sentence, initialExplanation]);
+  }, [word, sentence, initialExplanation, practiceId]);
 
   async function toggleFavorite() {
     if (!explanation) return;

@@ -7,8 +7,20 @@ router = APIRouter(prefix="/api/vocabulary", tags=["vocabulary"])
 
 
 @router.get("")
-async def list_vocabulary(request: Request, limit: int | None = Query(default=None, ge=1, le=100)):
-    return await request.app.state.database.list_favorites(limit)
+async def list_vocabulary(
+    request: Request,
+    limit: int | None = Query(default=None, ge=1, le=100),
+    practice_id: str | None = Query(default=None),
+    unassigned: bool = Query(default=False),
+):
+    if practice_id and unassigned:
+        raise HTTPException(400, "Choose practice_id or unassigned, not both")
+    return await request.app.state.database.list_favorites(limit, practice_id, unassigned)
+
+
+@router.get("/groups")
+async def list_vocabulary_groups(request: Request):
+    return await request.app.state.database.list_favorite_groups()
 
 
 @router.post("", response_model=FavoriteCreateResponse, status_code=status.HTTP_201_CREATED)

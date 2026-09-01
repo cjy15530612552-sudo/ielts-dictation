@@ -125,6 +125,11 @@ class Database:
             practice_columns = {row["name"] for row in db.execute("PRAGMA table_info(practice)").fetchall()}
             if "part" not in practice_columns:
                 db.execute("ALTER TABLE practice ADD COLUMN part TEXT NOT NULL DEFAULT 'part1'")
+            favorites = db.execute("SELECT id,practice_id,lemma,meaning_zh FROM favorite_word").fetchall()
+            for favorite in favorites:
+                scope = favorite["practice_id"] or "unassigned"
+                dedupe_key = f"{scope}::{favorite['lemma'].strip().casefold()}::{favorite['meaning_zh'].strip().casefold()}"
+                db.execute("UPDATE favorite_word SET dedupe_key=? WHERE id=?", (dedupe_key, favorite["id"]))
 
     async def create_practice(self, name: str, part: str = "part1") -> dict[str, Any]:
         return await asyncio.to_thread(self._create_practice, name, part)
@@ -295,20 +300,41 @@ class Database:
                 return None
         return self._get_practice(practice_id)
 
-    async def list_favorites(self, limit: int | None = None) -> list[dict[str, Any]]:
-        return await asyncio.to_thread(self._list_favorites, limit)
+    async def list_favorites(
+        self, limit: int | None = None, practice_id: str | None = None, unassigned: bool = False
+    ) -> list[dict[str, Any]]:
+        return await asyncio.to_thread(self._list_favorites, limit, practice_id, unassigned)
 
-    def _list_favorites(self, limit: int | None) -> list[dict[str, Any]]:
+    def _list_favorites(
+        self, limit: int | None, practice_id: str | None, unassigned: bool
+    ) -> list[dict[str, Any]]:
         sql = (
             "SELECT f.*, p.name practice_name FROM favorite_word f LEFT JOIN practice p ON p.id=f.practice_id "
-            "ORDER BY f.created_at DESC"
         )
-        params: tuple[Any, ...] = ()
+        params: list[Any] = []
+        if practice_id:
+            sql += "WHERE f.practice_id=? "
+            params.append(practice_id)
+        elif unassigned:
+            sql += "WHERE f.practice_id IS NULL "
+        sql += "ORDER BY f.created_at DESC"
         if limit:
             sql += " LIMIT ?"
-            params = (limit,)
+            params.append(limit)
         with self._connect() as db:
             return [dict(row) for row in db.execute(sql, params).fetchall()]
+
+    async def list_favorite_groups(self) -> list[dict[str, Any]]:
+        return await asyncio.to_thread(self._list_favorite_groups)
+
+    def _list_favorite_groups(self) -> list[dict[str, Any]]:
+        with self._connect() as db:
+            rows = db.execute(
+                "SELECT f.practice_id,p.name practice_name,COUNT(*) word_count,MAX(f.created_at) updated_at "
+                "FROM favorite_word f LEFT JOIN practice p ON p.id=f.practice_id "
+                "GROUP BY f.practice_id,p.name ORDER BY updated_at DESC"
+            ).fetchall()
+        return [dict(row) for row in rows]
 
     async def get_favorite(self, favorite_id: str) -> dict[str, Any] | None:
         items = await self.list_favorites()
@@ -318,7 +344,8 @@ class Database:
         return await asyncio.to_thread(self._add_favorite, data)
 
     def _add_favorite(self, data: dict[str, Any]) -> tuple[dict[str, Any], bool]:
-        key = f"{data['lemma'].strip().casefold()}::{data['meaning_zh'].strip().casefold()}"
+        scope = data.get("practice_id") or "unassigned"
+        key = f"{scope}::{data['lemma'].strip().casefold()}::{data['meaning_zh'].strip().casefold()}"
         with self._connect() as db:
             existing = db.execute("SELECT id FROM favorite_word WHERE dedupe_key=?", (key,)).fetchone()
             if existing:

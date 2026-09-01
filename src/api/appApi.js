@@ -29,7 +29,15 @@ export const generatePracticeSentenceAudio = (practiceId, sentenceId) => request
 );
 
 export const explainWord = (word, sentence) => request("/api/word/explain", jsonOptions("POST", { word, sentence }));
-export const listVocabulary = (limit) => request(`/api/vocabulary${limit ? `?limit=${limit}` : ""}`);
+export const listVocabulary = (limit, practiceId, unassigned = false) => {
+  const params = new URLSearchParams();
+  if (limit) params.set("limit", String(limit));
+  if (practiceId) params.set("practice_id", practiceId);
+  if (unassigned) params.set("unassigned", "true");
+  const query = params.toString();
+  return request(`/api/vocabulary${query ? `?${query}` : ""}`);
+};
+export const listVocabularyGroups = () => request("/api/vocabulary/groups");
 export const addFavorite = (data) => request("/api/vocabulary", jsonOptions("POST", data));
 export const deleteFavorite = (id) => request(`/api/vocabulary/${id}`, { method: "DELETE" });
 
