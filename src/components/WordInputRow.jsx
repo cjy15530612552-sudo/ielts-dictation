@@ -10,10 +10,10 @@ export function WordInputRow({
   onAnswerChange,
   onFocusWord,
   onMove,
-  onSpace,
   onSubmit,
   onReplay,
   onStop,
+  bindings,
 }) {
   return (
     <div className="word-input-row" aria-label={`听写区域，共 ${tokens.length} 个单词`}>
@@ -29,10 +29,10 @@ export function WordInputRow({
           onChange={(value) => onAnswerChange(index, value)}
           onFocus={() => onFocusWord(index)}
           onMove={onMove}
-          onSpace={onSpace}
-          onSubmit={(submittedIndex) => submittedIndex === tokens.length - 1 ? onSubmit() : onMove(1)}
+          onSubmit={onSubmit}
           onReplay={onReplay}
           onStop={onStop}
+          bindings={bindings}
         />
       ))}
     </div>

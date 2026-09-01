@@ -40,34 +40,14 @@ if ((await importLink.getAttribute("href")) !== "/practice/new") {
 
 const first = desktop.getByLabel("第 1 个单词");
 const second = desktop.getByLabel("第 2 个单词");
-const third = desktop.getByLabel("第 3 个单词");
-const fourth = desktop.getByLabel("第 4 个单词");
-const fifth = desktop.getByLabel("第 5 个单词");
 console.log("interaction: keyboard navigation and playback");
 await first.fill("The");
-await first.press("Enter");
+await first.press("Space");
 if (!(await second.evaluate((element) => element === document.activeElement))) {
-  throw new Error("Enter before the last word did not move focus to the next word");
+  throw new Error("Space did not move focus to the next word");
 }
+if ((await first.inputValue()) !== "The") throw new Error("Space changed the completed word");
 await second.fill("library");
-await third.fill("is");
-await fourth.fill("located");
-await second.press("Space");
-const shiftedValues = await Promise.all([first, second, third, fourth, fifth].map((input) => input.inputValue()));
-if (JSON.stringify(shiftedValues) !== JSON.stringify(["The", "", "library", "is", "located"])) {
-  throw new Error(`Space did not shift answers into the nearest empty slot: ${JSON.stringify(shiftedValues)}`);
-}
-if (!(await second.evaluate((element) => element === document.activeElement))) {
-  throw new Error("Space insertion did not preserve focus on the new empty slot");
-}
-await second.press("Space");
-if (!(await third.evaluate((element) => element === document.activeElement))) {
-  throw new Error("Space on an empty slot did not move focus to the next word");
-}
-await second.fill("library");
-await third.fill("");
-await fourth.fill("");
-await fifth.fill("");
 await second.press("Tab");
 if ((await second.inputValue()) !== "library") throw new Error("Tab replay lost the current answer");
 if (!(await second.evaluate((element) => element === document.activeElement))) {
@@ -116,7 +96,7 @@ const expected = ["The", "library", "is", "located", "on", "the", "second", "flo
 for (let index = 0; index < expected.length; index += 1) {
   await desktop.getByLabel(`第 ${index + 1} 个单词`).fill(expected[index]);
 }
-await desktop.getByLabel("第 8 个单词").press("Enter");
+await desktop.getByLabel("第 3 个单词").press("Enter");
 console.log("interaction: result and next sentence");
 await desktop.getByText("Accuracy 100%").waitFor();
 await desktop.screenshot({ path: outputPath("implementation-result.png"), fullPage: true });
@@ -141,7 +121,7 @@ await mobile.screenshot({ path: outputPath("implementation-mobile.png"), fullPag
 
 await writeFile(new URL("browser-check.json", outputDir), JSON.stringify({
   viewport: { desktop: "1440x1024", mobile: "390x844" },
-  interactions: ["Import navigation", "Space inserts and shifts to nearest empty slot", "Space advances from an empty slot", "Tab", "Escape", "Arrow caret movement", "Arrow boundary input switching", "Backspace", "Enter advances", "last Enter checks", "Next sentence", "Previous sentence"],
+  interactions: ["Import navigation", "Space advances without changing answers", "Tab", "Escape", "Arrow caret movement", "Arrow boundary input switching", "Backspace", "Enter checks from any word", "Next sentence", "Previous sentence"],
   consoleErrors: errors,
 }, null, 2));
 

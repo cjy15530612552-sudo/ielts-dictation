@@ -644,6 +644,8 @@ button:focus-visible {
 .app-logo span { display: block; margin-top: 3px; color: #929691; font-size: 10px; font-weight: 450; letter-spacing: 0; }
 .app-header nav { display: flex; align-items: center; gap: 28px; }
 .app-header nav a { color: #737773; font-size: 14px; text-decoration: none; }
+.app-header .keyboard-settings-link { display: inline-flex; align-items: center; gap: 6px; }
+.app-header .keyboard-settings-link svg { font-size: 17px; }
 .app-header nav a.active:not(.new-practice-link) { color: #252825; font-weight: 620; }
 .app-header .new-practice-link, .primary-link { min-height: 40px; padding: 9px 14px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; background: #2c2e2c; color: #fff; text-decoration: none; }
 .home-hero { max-width: 1360px; margin: 94px auto 100px; }
@@ -832,6 +834,25 @@ button:focus-visible {
 .ai-public-note h2 { margin: 0; font-size: 14px; }
 .ai-public-note p { margin: 7px 0 0; color: #777d77; font-size: 11px; line-height: 1.7; }
 
+.keyboard-settings-header { max-width: 1120px; margin: 78px auto 48px; }
+.keyboard-settings-header h1 { margin: 0; font-size: clamp(38px, 5vw, 58px); font-weight: 590; letter-spacing: -.045em; }
+.keyboard-settings-header > p:last-child { max-width: 650px; margin: 16px 0 0; color: #7a7f7a; line-height: 1.7; }
+.keyboard-settings-panel { max-width: 860px; margin: 0 auto; padding: 30px; border: 1px solid #e0e3de; border-radius: 14px; background: #fff; }
+.keyboard-settings-title { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding-bottom: 24px; border-bottom: 1px solid #eceeeb; }
+.keyboard-settings-title > div { display: flex; align-items: center; gap: 13px; }
+.keyboard-settings-title > div > svg { flex: 0 0 auto; color: #59675e; font-size: 27px; }
+.keyboard-settings-title h2 { margin: 0; font-size: 21px; }
+.keyboard-settings-title p { margin: 5px 0 0; color: #8a8f8a; font-size: 12px; }
+.keyboard-binding-list { display: grid; }
+.keyboard-binding-row { min-height: 94px; padding: 19px 0; border-bottom: 1px solid #eceeeb; display: flex; align-items: center; justify-content: space-between; gap: 28px; }
+.keyboard-binding-row h3 { margin: 0; font-size: 16px; font-weight: 620; }
+.keyboard-binding-row p { margin: 6px 0 0; color: #8a8f8a; font-size: 12px; }
+.keyboard-binding-key { flex: 0 0 156px; min-height: 48px; padding: 10px 18px; border: 1px solid #cfd3cd; border-radius: 8px; background: #f8f8f5; color: #4d524d; font-weight: 630; cursor: pointer; box-shadow: 0 2px 0 #dfe1dc; }
+.keyboard-binding-key:hover { border-color: #98a198; background: #fff; }
+.keyboard-binding-key.is-listening { border-color: #53685b; background: rgba(83,104,91,.08); color: #33463a; box-shadow: 0 0 0 3px rgba(83,104,91,.1); }
+.keyboard-settings-message { margin: 20px 0 0; padding: 11px 13px; border-radius: 7px; background: rgba(57,113,82,.08); color: var(--success); font-size: 12px; }
+.keyboard-fixed-note { margin: 20px 0 0; color: #888d88; font-size: 11px; line-height: 1.65; }
+
 @media (max-width: 900px) {
   .dictation-page { padding-inline: 24px; }
   .practice-shell { padding-top: 88px; }
@@ -851,6 +872,7 @@ button:focus-visible {
   .detail-stats { grid-template-columns: repeat(2,1fr); }
   .tts-workspace { grid-template-columns: 1fr; }
   .ai-settings-grid { grid-template-columns: 1fr; }
+  .keyboard-settings-panel { max-width: 720px; }
   .tts-lab-note { position: static; }
 }
 
@@ -920,7 +942,9 @@ button:focus-visible {
   .home-page { padding: 0 18px 70px; }
   .app-header { min-height: 78px; }
   .app-header nav { gap: 14px; }
-  .app-header nav > a:not(.new-practice-link):not(.ai-config-link) { display: none; }
+  .app-header nav > a:not(.new-practice-link):not(.ai-config-link):not(.keyboard-settings-link) { display: none; }
+  .app-header .keyboard-settings-link span { display: none; }
+  .app-header .keyboard-settings-link svg { font-size: 20px; }
   .app-header .new-practice-link { padding: 8px 10px; font-size: 12px; }
   .home-hero { margin: 62px auto 70px; }
   .home-hero h1 { font-size: 42px; }
@@ -938,6 +962,12 @@ button:focus-visible {
   .detail-actions > * { width: 100%; }
   .tts-lab-header { margin-top: 56px; }
   .ai-settings-header { margin-top: 56px; }
+  .keyboard-settings-header { margin: 56px auto 38px; }
+  .keyboard-settings-panel { padding: 19px; }
+  .keyboard-settings-title { align-items: flex-start; }
+  .keyboard-settings-title .secondary-button { padding-inline: 11px; font-size: 12px; }
+  .keyboard-binding-row { gap: 16px; }
+  .keyboard-binding-key { flex-basis: 112px; }
   .tts-form-column { padding: 19px; }
   .tts-control-grid, .tts-version-list { grid-template-columns: 1fr; }
   .tts-form-actions { align-items: stretch; flex-direction: column; }

@@ -8,19 +8,19 @@ export function WordInput({
   onChange,
   onFocus,
   onMove,
-  onSpace,
   onSubmit,
   onReplay,
   onStop,
+  bindings,
 }) {
   function handleKeyDown(event) {
     const { selectionStart, selectionEnd } = event.currentTarget;
     const hasSelection = selectionStart !== selectionEnd;
     const isPlainArrow = !event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey;
 
-    if (event.key === " ") {
+    if (event.code === bindings.advance) {
       event.preventDefault();
-      onSpace(index);
+      onMove(1);
     } else if (event.key === "ArrowLeft" && isPlainArrow && !hasSelection && selectionStart === 0) {
       event.preventDefault();
       onMove(-1, "end");
@@ -30,14 +30,14 @@ export function WordInput({
     } else if (event.key === "Backspace" && value.length === 0) {
       event.preventDefault();
       onMove(-1, "end");
-    } else if (event.key === "Tab") {
+    } else if (event.code === bindings.replay) {
       event.preventDefault();
       event.stopPropagation();
       onReplay();
-    } else if (event.key === "Enter") {
+    } else if (event.code === bindings.submit) {
       event.preventDefault();
-      onSubmit(index);
-    } else if (event.key === "Escape") {
+      onSubmit();
+    } else if (event.code === bindings.stop) {
       event.preventDefault();
       event.stopPropagation();
       onStop();

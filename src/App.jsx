@@ -7,6 +7,7 @@ import { VocabularyPage } from "./pages/VocabularyPage.jsx";
 import { PracticeDetailPage } from "./pages/PracticeDetailPage.jsx";
 import { TtsPlaygroundPage } from "./pages/TtsPlaygroundPage.jsx";
 import { AiSettingsPage } from "./pages/AiSettingsPage.jsx";
+import { KeyboardSettingsPage } from "./pages/KeyboardSettingsPage.jsx";
 
 export function App() {
   return (
@@ -20,6 +21,7 @@ export function App() {
       <Route path="/vocabulary" element={<VocabularyPage />} />
       <Route path="/tts-playground" element={<TtsPlaygroundPage />} />
       <Route path="/ai-settings" element={<AiSettingsPage />} />
+      <Route path="/keyboard-settings" element={<KeyboardSettingsPage />} />
       <Route path="/transcript/:sessionId/review" element={<TranscriptReviewPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

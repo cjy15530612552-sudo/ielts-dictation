@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { PiPlus } from "react-icons/pi";
+import { PiKeyboard, PiPlus } from "react-icons/pi";
 
 export function AppHeader() {
   return (
@@ -10,6 +10,7 @@ export function AppHeader() {
         <NavLink to="/vocabulary">单词本</NavLink>
         <NavLink to="/tts-playground">语音调试</NavLink>
         <NavLink className="ai-config-link" to="/ai-settings">AI 配置</NavLink>
+        <NavLink className="keyboard-settings-link" to="/keyboard-settings"><PiKeyboard /><span>键位设置</span></NavLink>
         <NavLink className="new-practice-link" to="/practice/new"><PiPlus />新建练习</NavLink>
       </nav>
     </header>
