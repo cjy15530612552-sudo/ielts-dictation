@@ -41,6 +41,9 @@ class FavoriteWordResponse(FavoriteWordCreate):
     created_at: str
     practice_name: str | None = None
     dedupe_key: str | None = None
+    audio_url: str | None = None
+    audio_status: str = "pending"
+    audio_error: str | None = None
 
 
 class FavoriteCreateResponse(BaseModel):

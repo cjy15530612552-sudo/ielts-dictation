@@ -1,3 +1,6 @@
+import asyncio
+from contextlib import asynccontextmanager, suppress
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -15,11 +18,29 @@ from app.services.qwen_vision import QwenVisionService
 from app.services.session_store import SessionStore
 from app.services.tts_service import TtsService
 from app.services.env_config_service import EnvConfigService
+from app.services.vocabulary_audio import backfill_vocabulary_pronunciations
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     active_settings = settings or get_settings()
-    app = FastAPI(title=active_settings.app_name, version="0.1.0")
+
+    @asynccontextmanager
+    async def lifespan(active_app: FastAPI):
+        task = asyncio.create_task(
+            backfill_vocabulary_pronunciations(
+                active_app.state.database,
+                active_app.state.tts_service,
+                active_app.state.settings,
+            )
+        )
+        active_app.state.vocabulary_audio_backfill_task = task
+        yield
+        if not task.done():
+            task.cancel()
+            with suppress(asyncio.CancelledError):
+                await task
+
+    app = FastAPI(title=active_settings.app_name, version="0.1.0", lifespan=lifespan)
     app.state.settings = active_settings
     app.state.database = Database(active_settings.database_path)
     app.state.session_store = SessionStore(active_settings.data_dir)

@@ -9,6 +9,7 @@ export function WordCard({ word, sentence, practiceId, onClose, initialExplanati
   const [status, setStatus] = useState(initialExplanation ? "ready" : "loading");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [favoriteBusy, setFavoriteBusy] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -30,20 +31,26 @@ export function WordCard({ word, sentence, practiceId, onClose, initialExplanati
 
   async function toggleFavorite() {
     if (!explanation) return;
+    setFavoriteBusy(true);
+    setError("");
     try {
       if (favorite) {
         await deleteFavorite(favorite.id);
         setFavorite(null);
         setMessage("已从单词本移除");
       } else {
+        setMessage("正在收藏并生成单词发音…");
         const response = await addFavorite({ ...explanation, source_sentence: sentence, practice_id: practiceId || null });
         setFavorite(response.item);
-        setMessage(response.created ? "已加入单词本" : "已收藏相同语境");
+        const baseMessage = response.created ? "已加入单词本" : "已收藏相同语境";
+        setMessage(response.item.audio_status === "ready" ? `${baseMessage}，发音已生成` : `${baseMessage}，发音生成失败，可在单词本重试`);
       }
       onFavoriteChange?.();
       window.setTimeout(() => setMessage(""), 1800);
     } catch (requestError) {
       setError(requestError.message);
+    } finally {
+      setFavoriteBusy(false);
     }
   }
 
@@ -56,7 +63,7 @@ export function WordCard({ word, sentence, practiceId, onClose, initialExplanati
         <>
           <div className="word-card-title">
             <h2>{explanation.word}</h2>
-            <button type="button" onClick={toggleFavorite} aria-label={favorite ? "取消收藏" : "收藏单词"}>
+            <button type="button" onClick={toggleFavorite} disabled={favoriteBusy} aria-label={favorite ? "取消收藏" : "收藏单词"}>
               {favorite ? <PiStarFill /> : <PiStar />}
             </button>
           </div>

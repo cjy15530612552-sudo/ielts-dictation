@@ -88,7 +88,10 @@ class Database:
                     source_sentence TEXT NOT NULL,
                     practice_id TEXT REFERENCES practice(id) ON DELETE SET NULL,
                     created_at TEXT NOT NULL,
-                    dedupe_key TEXT NOT NULL UNIQUE
+                    dedupe_key TEXT NOT NULL UNIQUE,
+                    audio_url TEXT,
+                    audio_status TEXT NOT NULL DEFAULT 'pending',
+                    audio_error TEXT
                 );
                 CREATE TABLE IF NOT EXISTS tts_playground_version (
                     id TEXT PRIMARY KEY,
@@ -125,6 +128,13 @@ class Database:
             practice_columns = {row["name"] for row in db.execute("PRAGMA table_info(practice)").fetchall()}
             if "part" not in practice_columns:
                 db.execute("ALTER TABLE practice ADD COLUMN part TEXT NOT NULL DEFAULT 'part1'")
+            favorite_columns = {row["name"] for row in db.execute("PRAGMA table_info(favorite_word)").fetchall()}
+            if "audio_url" not in favorite_columns:
+                db.execute("ALTER TABLE favorite_word ADD COLUMN audio_url TEXT")
+            if "audio_status" not in favorite_columns:
+                db.execute("ALTER TABLE favorite_word ADD COLUMN audio_status TEXT NOT NULL DEFAULT 'pending'")
+            if "audio_error" not in favorite_columns:
+                db.execute("ALTER TABLE favorite_word ADD COLUMN audio_error TEXT")
             favorites = db.execute("SELECT id,practice_id,lemma,meaning_zh FROM favorite_word").fetchall()
             for favorite in favorites:
                 scope = favorite["practice_id"] or "unassigned"
@@ -370,6 +380,34 @@ class Database:
                 (favorite_id,),
             ).fetchone()
         return dict(row)
+
+    async def update_favorite_audio(
+        self,
+        favorite_id: str,
+        *,
+        audio_url: str | None = None,
+        audio_status: str,
+        audio_error: str | None = None,
+    ) -> dict[str, Any] | None:
+        return await asyncio.to_thread(
+            self._update_favorite_audio, favorite_id, audio_url, audio_status, audio_error
+        )
+
+    def _update_favorite_audio(
+        self,
+        favorite_id: str,
+        audio_url: str | None,
+        audio_status: str,
+        audio_error: str | None,
+    ) -> dict[str, Any] | None:
+        with self._connect() as db:
+            cursor = db.execute(
+                "UPDATE favorite_word SET audio_url=?,audio_status=?,audio_error=? WHERE id=?",
+                (audio_url, audio_status, audio_error, favorite_id),
+            )
+            if cursor.rowcount == 0:
+                return None
+        return self._get_favorite_sync(favorite_id)
 
     async def delete_favorite(self, favorite_id: str) -> bool:
         return await asyncio.to_thread(self._delete_favorite, favorite_id)

@@ -71,7 +71,7 @@ async function createPage(viewport) {
     const url = new URL(route.request().url());
     if (route.request().method() === "POST") {
       const body = route.request().postDataJSON();
-      const item = { ...body, id: "favorite-1", created_at: "2026-08-31T00:00:00Z", practice_name: "剑雅18 Test 1 Part 4" };
+      const item = { ...body, id: "favorite-1", created_at: "2026-08-31T00:00:00Z", practice_name: "剑雅18 Test 1 Part 4", audio_url: "/audio/playground/good.mp3", audio_status: "ready", audio_error: null };
       favorites = [item];
       return route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ item, created: true }) });
     }
@@ -161,6 +161,7 @@ await groupCard.click();
 await desktop.waitForURL("**/vocabulary?practiceId=practice-qa");
 await desktop.getByRole("heading", { name: "剑雅18 Test 1 Part 4" }).waitFor();
 await desktop.getByRole("heading", { name: "Good" }).waitFor();
+await desktop.getByRole("button", { name: "播放 Good 发音" }).waitFor();
 await desktop.screenshot({ path: outputPath("practice-vocabulary.png"), fullPage: true });
 
 const mobile = await createPage({ width: 390, height: 844 });
@@ -178,7 +179,7 @@ if ((await linkage.getByLabel("IELTS Mode").inputValue()) !== "part3") throw new
 
 await writeFile(outputPath("transcript-browser-check.json"), JSON.stringify({
   routes: ["/practice/new", "/transcript/session-qa/review", "/"],
-  validated: ["1-6 file limit", "practice naming", "Part persistence", "Part-to-Voice-Lab linkage", "thumbnail order", "analyze navigation", "editable transcript", "structured JSON", "confirmation save", "home insertion", "practice restart", "practice settings return to transcript review", "progress resume route", "context word card", "favorite save", "practice vocabulary grouping", "practice vocabulary filtering", "mobile overflow"],
+  validated: ["1-6 file limit", "practice naming", "Part persistence", "Part-to-Voice-Lab linkage", "thumbnail order", "analyze navigation", "editable transcript", "structured JSON", "confirmation save", "home insertion", "practice restart", "practice settings return to transcript review", "progress resume route", "context word card", "favorite save with generated pronunciation", "practice vocabulary grouping", "practice vocabulary filtering", "vocabulary pronunciation control", "mobile overflow"],
   consoleErrors: errors,
 }, null, 2));
 await browser.close();

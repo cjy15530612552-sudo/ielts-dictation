@@ -39,6 +39,7 @@ export const listVocabulary = (limit, practiceId, unassigned = false) => {
 };
 export const listVocabularyGroups = () => request("/api/vocabulary/groups");
 export const addFavorite = (data) => request("/api/vocabulary", jsonOptions("POST", data));
+export const generateFavoriteAudio = (id) => request(`/api/vocabulary/${id}/audio`, { method: "POST" });
 export const deleteFavorite = (id) => request(`/api/vocabulary/${id}`, { method: "DELETE" });
 
 export const getTtsConfig = () => request("/api/tts/playground/config");

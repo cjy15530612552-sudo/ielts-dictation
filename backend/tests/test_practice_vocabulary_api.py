@@ -45,6 +45,11 @@ class FailingTtsService(FakeTtsService):
         return await super().generate(speech_text, voice, instruction, pace, api_key)
 
 
+class AlwaysFailingTtsService(FakeTtsService):
+    async def generate(self, speech_text, voice, instruction, pace, api_key=None):
+        raise TtsError("temporary generation failure")
+
+
 def make_client(tmp_path: Path):
     settings = Settings(data_dir=tmp_path / "data", tts_storage_dir=tmp_path / "audio")
     app = create_app(settings)
@@ -125,6 +130,10 @@ def test_word_explain_and_context_deduplication(tmp_path: Path):
     assert first["created"] is True
     assert second["created"] is False
     assert first["item"]["id"] == second["item"]["id"]
+    assert first["item"]["audio_status"] == "ready"
+    assert first["item"]["audio_url"].endswith("practice-test-1.mp3")
+    assert client.get(first["item"]["audio_url"]).content == b"ID3practice-audio"
+    assert client.app.state.tts_service.calls == ["bank"]
     assert len(client.get("/api/vocabulary").json()) == 1
     assert client.delete(f"/api/vocabulary/{first['item']['id']}").status_code == 204
 
@@ -170,6 +179,30 @@ def test_vocabulary_is_grouped_and_filtered_per_practice(tmp_path: Path):
     assert client.get(
         "/api/vocabulary", params={"practice_id": first_practice["id"], "unassigned": True}
     ).status_code == 400
+
+
+def test_failed_vocabulary_audio_keeps_favorite_and_can_retry(tmp_path: Path):
+    client, _ = make_client(tmp_path)
+    output_dir = client.app.state.tts_service.output_dir
+    client.app.state.tts_service = AlwaysFailingTtsService(output_dir)
+    payload = {
+        "word": "concern", "lemma": "concern", "phonetic_uk": "/kənˈsɜːn/",
+        "part_of_speech": "noun", "meaning_zh": "担忧", "meaning_in_context": "这里表示担心",
+        "source_sentence": "Cost is the main concern.", "practice_id": None,
+    }
+    created = client.post("/api/vocabulary", json=payload)
+    assert created.status_code == 201
+    favorite = created.json()["item"]
+    assert favorite["audio_status"] == "failed"
+    assert favorite["audio_url"] is None
+    assert "temporary generation failure" in favorite["audio_error"]
+    assert len(client.get("/api/vocabulary").json()) == 1
+
+    client.app.state.tts_service = FakeTtsService(output_dir)
+    retried = client.post(f"/api/vocabulary/{favorite['id']}/audio")
+    assert retried.status_code == 200
+    assert retried.json()["audio_status"] == "ready"
+    assert retried.json()["audio_url"].endswith("practice-test-1.mp3")
 
 
 def test_legacy_sentence_audio_is_generated_on_first_play_request(tmp_path: Path):

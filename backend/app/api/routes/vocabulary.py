@@ -1,6 +1,9 @@
-from fastapi import APIRouter, HTTPException, Query, Request, Response, status
+from typing import Annotated
 
-from app.models.practice import FavoriteCreateResponse, FavoriteWordCreate
+from fastapi import APIRouter, Header, HTTPException, Query, Request, Response, status
+
+from app.models.practice import FavoriteCreateResponse, FavoriteWordCreate, FavoriteWordResponse
+from app.services.vocabulary_audio import ensure_vocabulary_pronunciation
 
 
 router = APIRouter(prefix="/api/vocabulary", tags=["vocabulary"])
@@ -28,7 +31,31 @@ async def add_favorite(payload: FavoriteWordCreate, request: Request):
     if payload.practice_id and not await request.app.state.database.get_practice(payload.practice_id):
         raise HTTPException(400, "Source practice not found")
     item, created = await request.app.state.database.add_favorite(payload.model_dump())
+    item = await ensure_vocabulary_pronunciation(
+        request.app.state.database,
+        request.app.state.tts_service,
+        request.app.state.settings,
+        item,
+    )
     return {"item": item, "created": created}
+
+
+@router.post("/{favorite_id}/audio", response_model=FavoriteWordResponse)
+async def generate_favorite_audio(
+    favorite_id: str,
+    request: Request,
+    api_key: Annotated[str | None, Header(alias="X-DashScope-API-Key")] = None,
+):
+    item = await request.app.state.database.get_favorite(favorite_id)
+    if not item:
+        raise HTTPException(404, "Favorite word not found")
+    return await ensure_vocabulary_pronunciation(
+        request.app.state.database,
+        request.app.state.tts_service,
+        request.app.state.settings,
+        item,
+        api_key,
+    )
 
 
 @router.get("/{favorite_id}")
