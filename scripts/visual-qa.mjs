@@ -46,7 +46,6 @@ await first.press("Enter");
 if (!(await second.evaluate((element) => element === document.activeElement))) {
   throw new Error("Enter before the last word did not move focus to the next word");
 }
-await second.press("ArrowLeft");
 await first.press("Space");
 if (!(await second.evaluate((element) => element === document.activeElement))) {
   throw new Error("Space did not move focus to the next word");
@@ -60,11 +59,36 @@ if (!(await second.evaluate((element) => element === document.activeElement))) {
 await desktop.getByText("正在播放...").waitFor();
 await second.press("Escape");
 await desktop.getByText("再听一遍").waitFor();
+await second.evaluate((element) => element.setSelectionRange(4, 4));
 await second.press("ArrowLeft");
-if (!(await first.evaluate((element) => element === document.activeElement))) {
-  throw new Error("ArrowLeft did not move focus backward");
+if (!(await second.evaluate((element) => element === document.activeElement && element.selectionStart === 3))) {
+  throw new Error("ArrowLeft did not move the caret within the current word");
 }
+await second.evaluate((element) => element.setSelectionRange(element.value.length, element.value.length));
+await second.press("ArrowLeft");
+if (!(await second.evaluate((element) => element === document.activeElement))) {
+  throw new Error("ArrowLeft before the word boundary switched inputs too early");
+}
+await second.evaluate((element) => element.setSelectionRange(0, 0));
+await second.press("ArrowLeft");
+if (!(await first.evaluate((element) => element === document.activeElement && element.selectionStart === element.value.length))) {
+  throw new Error("ArrowLeft at the start did not move focus backward");
+}
+await first.evaluate((element) => element.setSelectionRange(0, 0));
+await first.press("ArrowLeft");
+if (!(await first.evaluate((element) => element === document.activeElement && element.selectionStart === 0))) {
+  throw new Error("ArrowLeft moved outside the first input");
+}
+await first.evaluate((element) => element.setSelectionRange(element.value.length, element.value.length));
 await first.press("ArrowRight");
+if (!(await second.evaluate((element) => element === document.activeElement && element.selectionStart === 0))) {
+  throw new Error("ArrowRight at the end did not move focus forward");
+}
+await second.evaluate((element) => element.setSelectionRange(2, 2));
+await second.press("ArrowRight");
+if (!(await second.evaluate((element) => element === document.activeElement && element.selectionStart === 3))) {
+  throw new Error("ArrowRight did not move the caret within the current word");
+}
 await second.fill("");
 await second.press("Backspace");
 if (!(await first.evaluate((element) => element === document.activeElement))) {
@@ -100,7 +124,7 @@ await mobile.screenshot({ path: outputPath("implementation-mobile.png"), fullPag
 
 await writeFile(new URL("browser-check.json", outputDir), JSON.stringify({
   viewport: { desktop: "1440x1024", mobile: "390x844" },
-  interactions: ["Import navigation", "Space", "Tab", "Escape", "ArrowLeft", "ArrowRight", "Backspace", "Enter advances", "last Enter checks", "Next sentence", "Previous sentence"],
+  interactions: ["Import navigation", "Space", "Tab", "Escape", "Arrow caret movement", "Arrow boundary input switching", "Backspace", "Enter advances", "last Enter checks", "Next sentence", "Previous sentence"],
   consoleErrors: errors,
 }, null, 2));
 

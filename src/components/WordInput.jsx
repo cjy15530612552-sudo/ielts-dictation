@@ -13,18 +13,22 @@ export function WordInput({
   onStop,
 }) {
   function handleKeyDown(event) {
+    const { selectionStart, selectionEnd } = event.currentTarget;
+    const hasSelection = selectionStart !== selectionEnd;
+    const isPlainArrow = !event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey;
+
     if (event.key === " ") {
       event.preventDefault();
       onMove(1);
-    } else if (event.key === "ArrowLeft") {
+    } else if (event.key === "ArrowLeft" && isPlainArrow && !hasSelection && selectionStart === 0) {
       event.preventDefault();
-      onMove(-1);
-    } else if (event.key === "ArrowRight") {
+      onMove(-1, "end");
+    } else if (event.key === "ArrowRight" && isPlainArrow && !hasSelection && selectionEnd === value.length) {
       event.preventDefault();
-      onMove(1);
+      onMove(1, "start");
     } else if (event.key === "Backspace" && value.length === 0) {
       event.preventDefault();
-      onMove(-1);
+      onMove(-1, "end");
     } else if (event.key === "Tab") {
       event.preventDefault();
       event.stopPropagation();

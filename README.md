@@ -108,7 +108,7 @@ VITE_API_BASE_URL=https://api.example.com npm run build
 - `Enter`：移动到下一格；最后一格检查答案
 - `Space`：移动到下一格
 - `Backspace`：空输入时返回上一格
-- `←` / `→`：切换输入格
+- `←` / `→`：先在当前单词的字母间移动光标；到达开头或末尾后切换输入格
 - `Tab`：重播当前句并保留焦点
 - `Esc`：停止播放
 

@@ -61,11 +61,18 @@ export function DictationPage() {
   }, [isPractice, practiceId, searchParams]);
 
   const slotWidths = useMemo(() => sentence?.tokens.map((_, index) => SLOT_WIDTHS[index % SLOT_WIDTHS.length]) ?? [], [sentence]);
-  const focusWord = useCallback((index) => {
+  const focusWord = useCallback((index, caretPosition) => {
     if (!sentence) return;
-    const bounded = Math.max(0, Math.min(index, sentence.tokens.length - 1));
-    setCurrentWordIndex(bounded);
-    window.requestAnimationFrame(() => inputRefs.current[bounded]?.focus());
+    if (index < 0 || index >= sentence.tokens.length) return;
+    setCurrentWordIndex(index);
+    window.requestAnimationFrame(() => {
+      const input = inputRefs.current[index];
+      input?.focus();
+      if (input && caretPosition) {
+        const caret = caretPosition === "start" ? 0 : input.value.length;
+        input.setSelectionRange(caret, caret);
+      }
+    });
   }, [sentence]);
   const stopPlayback = useCallback(() => {
     if (playbackTimerRef.current) window.clearTimeout(playbackTimerRef.current);
@@ -168,9 +175,9 @@ export function DictationPage() {
       <section className="practice-shell" onKeyDown={handlePracticeKeyDown}>
         <p className="practice-prompt">听写你听到的句子</p><SentencePlayer isPlaying={isPlaying} hasPlayed={hasPlayed} onPlay={replayCurrentSentence} />
         {playbackError && <p className="flow-error playback-error" role="alert">{playbackError}</p>}
-        {!isSubmitted ? <><WordInputRow tokens={sentence.tokens} answers={answers} currentWordIndex={currentWordIndex} inputRefs={inputRefs} slotWidths={slotWidths} disabled={isSubmitted} onAnswerChange={updateAnswer} onFocusWord={setCurrentWordIndex} onMove={(offset) => focusWord(currentWordIndex + offset)} onSubmit={submitSentence} onReplay={replayCurrentSentence} onStop={stopPlayback} /><DictationControls onReplay={replayCurrentSentence} onSubmit={submitSentence} /></> : <SentenceResult result={result} slotWidths={slotWidths} onPrevious={goToPreviousSentence} onReplay={replayCurrentSentence} onNext={goToNextSentence} onWordClick={(word) => setLookup({ word, sentence: sentence.text })} isFirst={sentenceIndex === 0} isLast={isPractice && sentenceIndex === sentences.length - 1} />}
+        {!isSubmitted ? <><WordInputRow tokens={sentence.tokens} answers={answers} currentWordIndex={currentWordIndex} inputRefs={inputRefs} slotWidths={slotWidths} disabled={isSubmitted} onAnswerChange={updateAnswer} onFocusWord={setCurrentWordIndex} onMove={(offset, caretPosition) => focusWord(currentWordIndex + offset, caretPosition)} onSubmit={submitSentence} onReplay={replayCurrentSentence} onStop={stopPlayback} /><DictationControls onReplay={replayCurrentSentence} onSubmit={submitSentence} /></> : <SentenceResult result={result} slotWidths={slotWidths} onPrevious={goToPreviousSentence} onReplay={replayCurrentSentence} onNext={goToNextSentence} onWordClick={(word) => setLookup({ word, sentence: sentence.text })} isFirst={sentenceIndex === 0} isLast={isPractice && sentenceIndex === sentences.length - 1} />}
       </section>
-      <footer className="keyboard-footer" aria-label="快捷键说明"><ShortcutHint shortcut="Space" label="下一词" /><span className="footer-separator">|</span><ShortcutHint shortcut="← →" label="切换" /><span className="footer-separator">|</span><ShortcutHint shortcut="Enter" label="下一格 / 检查" /><span className="footer-separator">|</span><ShortcutHint shortcut="Esc" label="停止" /></footer>
+      <footer className="keyboard-footer" aria-label="快捷键说明"><ShortcutHint shortcut="Space" label="下一词" /><span className="footer-separator">|</span><ShortcutHint shortcut="← →" label="移动光标 / 跨格" /><span className="footer-separator">|</span><ShortcutHint shortcut="Enter" label="下一格 / 检查" /><span className="footer-separator">|</span><ShortcutHint shortcut="Esc" label="停止" /></footer>
       {lookup && <WordCard word={lookup.word} sentence={lookup.sentence} practiceId={practiceId} onClose={() => setLookup(null)} />}
     </main>
   );
