@@ -8,6 +8,7 @@ export function WordInput({
   onChange,
   onFocus,
   onMove,
+  onSpace,
   onSubmit,
   onReplay,
   onStop,
@@ -19,7 +20,7 @@ export function WordInput({
 
     if (event.key === " ") {
       event.preventDefault();
-      onMove(1);
+      onSpace(index);
     } else if (event.key === "ArrowLeft" && isPlainArrow && !hasSelection && selectionStart === 0) {
       event.preventDefault();
       onMove(-1, "end");
