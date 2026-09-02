@@ -29,7 +29,7 @@ export function WordInputRow({
           onChange={(value) => onAnswerChange(index, value)}
           onFocus={() => onFocusWord(index)}
           onMove={onMove}
-          onSubmit={onSubmit}
+          onSubmit={(submittedIndex) => submittedIndex === tokens.length - 1 ? onSubmit() : onMove(1)}
           onReplay={onReplay}
           onStop={onStop}
           bindings={bindings}

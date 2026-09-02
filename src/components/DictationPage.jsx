@@ -133,6 +133,19 @@ export function DictationPage() {
       return updated;
     });
   }
+  function restartCurrentSentence() {
+    if (!sentence) return;
+    stopPlayback();
+    setAnswers(sentence.tokens.map(() => ""));
+    setScores((current) => {
+      const updated = [...current];
+      updated[sentenceIndex] = undefined;
+      return updated;
+    });
+    setCurrentWordIndex(0); setHasPlayed(false); setIsSubmitted(false); setResult(null); setPlaybackError("");
+    replayCurrentSentence();
+    focusWord(0);
+  }
   function loadSentence(nextIndex, shouldPlay) {
     stopPlayback(); const next = sentences[nextIndex]; setSentenceIndex(nextIndex); setAnswers(next.tokens.map(() => ""));
     setCurrentWordIndex(0); setHasPlayed(false); setIsSubmitted(false); setResult(null); setPlaybackError("");
@@ -177,9 +190,9 @@ export function DictationPage() {
       <section className="practice-shell" onKeyDown={handlePracticeKeyDown}>
         <p className="practice-prompt">听写你听到的句子</p><SentencePlayer isPlaying={isPlaying} hasPlayed={hasPlayed} onPlay={replayCurrentSentence} />
         {playbackError && <p className="flow-error playback-error" role="alert">{playbackError}</p>}
-        {!isSubmitted ? <><WordInputRow tokens={sentence.tokens} answers={answers} currentWordIndex={currentWordIndex} inputRefs={inputRefs} slotWidths={slotWidths} disabled={isSubmitted} onAnswerChange={updateAnswer} onFocusWord={setCurrentWordIndex} onMove={(offset, caretPosition) => focusWord(currentWordIndex + offset, caretPosition)} onSubmit={submitSentence} onReplay={replayCurrentSentence} onStop={stopPlayback} bindings={keyboardBindings} /><DictationControls onReplay={replayCurrentSentence} onSubmit={submitSentence} replayShortcut={formatKeyCode(keyboardBindings.replay)} /></> : <SentenceResult result={result} slotWidths={slotWidths} onPrevious={goToPreviousSentence} onReplay={replayCurrentSentence} onNext={goToNextSentence} onWordClick={(word) => setLookup({ word, sentence: sentence.text })} isFirst={sentenceIndex === 0} isLast={isPractice && sentenceIndex === sentences.length - 1} />}
+        {!isSubmitted ? <><WordInputRow tokens={sentence.tokens} answers={answers} currentWordIndex={currentWordIndex} inputRefs={inputRefs} slotWidths={slotWidths} disabled={isSubmitted} onAnswerChange={updateAnswer} onFocusWord={setCurrentWordIndex} onMove={(offset, caretPosition) => focusWord(currentWordIndex + offset, caretPosition)} onSubmit={submitSentence} onReplay={replayCurrentSentence} onStop={stopPlayback} bindings={keyboardBindings} /><DictationControls onReplay={replayCurrentSentence} onSubmit={submitSentence} replayShortcut={formatKeyCode(keyboardBindings.replay)} /></> : <SentenceResult result={result} slotWidths={slotWidths} onPrevious={goToPreviousSentence} onReplay={replayCurrentSentence} onRestart={restartCurrentSentence} onNext={goToNextSentence} onWordClick={(word) => setLookup({ word, sentence: sentence.text })} isFirst={sentenceIndex === 0} isLast={isPractice && sentenceIndex === sentences.length - 1} />}
       </section>
-      <footer className="keyboard-footer" aria-label="快捷键说明"><ShortcutHint shortcut={formatKeyCode(keyboardBindings.advance)} label="下一格" /><span className="footer-separator">|</span><ShortcutHint shortcut="← →" label="移动光标 / 跨格" /><span className="footer-separator">|</span><ShortcutHint shortcut={formatKeyCode(keyboardBindings.submit)} label="检查答案" /><span className="footer-separator">|</span><ShortcutHint shortcut={formatKeyCode(keyboardBindings.stop)} label="停止" /></footer>
+      <footer className="keyboard-footer" aria-label="快捷键说明"><ShortcutHint shortcut={formatKeyCode(keyboardBindings.advance)} label="下一格" /><span className="footer-separator">|</span><ShortcutHint shortcut="← →" label="移动光标 / 跨格" /><span className="footer-separator">|</span><ShortcutHint shortcut={formatKeyCode(keyboardBindings.submit)} label="下一格 / 检查" /><span className="footer-separator">|</span><ShortcutHint shortcut={formatKeyCode(keyboardBindings.stop)} label="停止" /></footer>
       {lookup && <WordCard word={lookup.word} sentence={lookup.sentence} practiceId={practiceId} onClose={() => setLookup(null)} />}
     </main>
   );

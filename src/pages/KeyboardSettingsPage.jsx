@@ -12,7 +12,7 @@ import {
 
 const ACTIONS = [
   { id: "advance", label: "切换格子", description: "移动到下一个单词输入格" },
-  { id: "submit", label: "检查答案", description: "立即提交并检查当前整句" },
+  { id: "submit", label: "下一格 / 检查答案", description: "前往下一格；在最后一格提交并检查整句" },
   { id: "replay", label: "重新播放", description: "重听当前句子并保留输入焦点" },
   { id: "stop", label: "停止播放", description: "停止当前正在播放的语音" },
 ];

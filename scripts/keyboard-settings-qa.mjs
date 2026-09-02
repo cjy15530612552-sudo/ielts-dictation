@@ -25,7 +25,7 @@ await desktop.goto(baseUrl, { waitUntil: "domcontentloaded" });
 await desktop.getByRole("link", { name: "键位设置" }).click();
 await desktop.waitForURL("**/keyboard-settings");
 await desktop.getByRole("heading", { name: "键位设置" }).waitFor();
-for (const [action, key] of [["切换格子", "Space"], ["检查答案", "Enter"], ["重新播放", "Tab"], ["停止播放", "Esc"]]) {
+for (const [action, key] of [["切换格子", "Space"], ["下一格 / 检查答案", "Enter"], ["重新播放", "Tab"], ["停止播放", "Esc"]]) {
   await desktop.getByRole("button", { name: `${action}键位，当前 ${key}` }).waitFor();
 }
 
@@ -48,15 +48,23 @@ if ((await first.inputValue()) !== "The") throw new Error("Custom advance key ch
 
 await desktop.goto(`${baseUrl}/keyboard-settings`, { waitUntil: "domcontentloaded" });
 await desktop.getByRole("button", { name: "切换格子键位，当前 N" }).waitFor();
-const submitKey = desktop.getByRole("button", { name: "检查答案键位，当前 Enter" });
+const submitKey = desktop.getByRole("button", { name: "下一格 / 检查答案键位，当前 Enter" });
 await submitKey.click();
 await submitKey.press("n");
-await desktop.getByText("检查答案已设为 N，并与切换格子交换键位。").waitFor();
+await desktop.getByText("下一格 / 检查答案已设为 N，并与切换格子交换键位。").waitFor();
 await desktop.getByRole("button", { name: "切换格子键位，当前 Enter" }).waitFor();
-await desktop.getByRole("button", { name: "检查答案键位，当前 N" }).waitFor();
+await desktop.getByRole("button", { name: "下一格 / 检查答案键位，当前 N" }).waitFor();
 await desktop.goto(`${baseUrl}/dictation`, { waitUntil: "domcontentloaded" });
 await desktop.getByLabel("第 1 个单词").fill("The");
 await desktop.getByLabel("第 1 个单词").press("n");
+if (!(await desktop.getByLabel("第 2 个单词").evaluate((element) => element === document.activeElement))) {
+  throw new Error("Custom submit key did not advance before the last input");
+}
+const expected = ["The", "library", "is", "located", "on", "the", "second", "floor"];
+for (let index = 0; index < expected.length; index += 1) {
+  await desktop.getByLabel(`第 ${index + 1} 个单词`).fill(expected[index]);
+}
+await desktop.getByLabel("第 8 个单词").press("n");
 await desktop.getByText(/Accuracy/).waitFor();
 await desktop.goto(`${baseUrl}/keyboard-settings`, { waitUntil: "domcontentloaded" });
 await desktop.getByRole("button", { name: "恢复默认" }).click();
@@ -71,7 +79,7 @@ await mobile.screenshot({ path: outputPath("keyboard-settings-mobile.png"), full
 
 await writeFile(outputPath("keyboard-settings-browser-check.json"), JSON.stringify({
   route: "/keyboard-settings",
-  validated: ["home navigation", "default bindings", "click then press to bind", "dictation uses custom advance key", "conflict swaps bindings", "dictation uses custom submit key", "persistence", "restore defaults", "mobile overflow"],
+  validated: ["home navigation", "default bindings", "click then press to bind", "dictation uses custom advance key", "conflict swaps bindings", "custom submit key advances before last input", "custom submit key checks on last input", "persistence", "restore defaults", "mobile overflow"],
   consoleErrors: errors,
 }, null, 2));
 await browser.close();

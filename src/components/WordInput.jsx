@@ -36,7 +36,7 @@ export function WordInput({
       onReplay();
     } else if (event.code === bindings.submit) {
       event.preventDefault();
-      onSubmit();
+      onSubmit(index);
     } else if (event.code === bindings.stop) {
       event.preventDefault();
       event.stopPropagation();

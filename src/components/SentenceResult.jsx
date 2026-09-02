@@ -1,6 +1,6 @@
 import { PiArrowCounterClockwise, PiArrowLeft, PiArrowRight } from "react-icons/pi";
 
-export function SentenceResult({ result, slotWidths, onPrevious, onReplay, onNext, onWordClick, isFirst = false, isLast = false }) {
+export function SentenceResult({ result, slotWidths, onPrevious, onReplay, onRestart, onNext, onWordClick, isFirst = false, isLast = false }) {
   const accuracy = Math.round((result.correctCount / result.aligned.length) * 100);
 
   return (
@@ -35,6 +35,10 @@ export function SentenceResult({ result, slotWidths, onPrevious, onReplay, onNex
           <button className="text-action" type="button" onClick={onReplay}>
             <PiArrowCounterClockwise aria-hidden="true" />
             <span>再听一次</span>
+          </button>
+          <button className="text-action result-restart-action" type="button" onClick={onRestart}>
+            <PiArrowCounterClockwise aria-hidden="true" />
+            <span>重新开始</span>
           </button>
           <button className="primary-button" type="button" onClick={onNext}>
             <span>{isLast ? "完成练习" : "下一句"}</span>

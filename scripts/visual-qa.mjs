@@ -97,9 +97,30 @@ for (let index = 0; index < expected.length; index += 1) {
   await desktop.getByLabel(`第 ${index + 1} 个单词`).fill(expected[index]);
 }
 await desktop.getByLabel("第 3 个单词").press("Enter");
+if (!(await desktop.getByLabel("第 4 个单词").evaluate((element) => element === document.activeElement))) {
+  throw new Error("Enter before the last word did not move focus to the next word");
+}
+if (await desktop.getByText("Accuracy 100%").isVisible()) throw new Error("Enter submitted before the last word");
+await desktop.getByLabel("第 8 个单词").press("Enter");
 console.log("interaction: result and next sentence");
 await desktop.getByText("Accuracy 100%").waitFor();
 await desktop.screenshot({ path: outputPath("implementation-result.png"), fullPage: true });
+await desktop.getByRole("button", { name: "重新开始", exact: true }).click();
+await desktop.getByLabel("第 1 个单词").waitFor();
+for (let index = 0; index < expected.length; index += 1) {
+  if ((await desktop.getByLabel(`第 ${index + 1} 个单词`).inputValue()) !== "") {
+    throw new Error("Restart current sentence did not clear every input");
+  }
+}
+if (!(await desktop.getByLabel("第 1 个单词").evaluate((element) => element === document.activeElement))) {
+  throw new Error("Restart current sentence did not focus the first word");
+}
+await desktop.getByText("正在播放...").waitFor();
+for (let index = 0; index < expected.length; index += 1) {
+  await desktop.getByLabel(`第 ${index + 1} 个单词`).fill(expected[index]);
+}
+await desktop.getByLabel("第 8 个单词").press("Enter");
+await desktop.getByText("Accuracy 100%").waitFor();
 await desktop.getByRole("button", { name: /下一句/ }).click();
 await desktop.getByLabel("第 1 个单词").waitFor();
 if (!(await desktop.getByText("4 / 18").isVisible())) throw new Error("Next sentence did not update progress");
@@ -121,7 +142,7 @@ await mobile.screenshot({ path: outputPath("implementation-mobile.png"), fullPag
 
 await writeFile(new URL("browser-check.json", outputDir), JSON.stringify({
   viewport: { desktop: "1440x1024", mobile: "390x844" },
-  interactions: ["Import navigation", "Space advances without changing answers", "Tab", "Escape", "Arrow caret movement", "Arrow boundary input switching", "Backspace", "Enter checks from any word", "Next sentence", "Previous sentence"],
+  interactions: ["Import navigation", "Space advances without changing answers", "Tab", "Escape", "Arrow caret movement", "Arrow boundary input switching", "Backspace", "Enter advances before last word", "Enter checks on last word", "Restart current sentence clears inputs and replays", "Next sentence", "Previous sentence"],
   consoleErrors: errors,
 }, null, 2));
 
