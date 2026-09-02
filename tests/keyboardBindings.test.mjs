@@ -40,6 +40,7 @@ test("keeps fixed navigation keys reserved", () => {
   const result = assignKeyboardBinding(DEFAULT_KEYBOARD_BINDINGS, "submit", "ArrowRight");
   assert.equal(result.bindings, DEFAULT_KEYBOARD_BINDINGS);
   assert.equal(result.changed, false);
+  assert.equal(assignKeyboardBinding(DEFAULT_KEYBOARD_BINDINGS, "submit", "ArrowUp").changed, false);
 });
 
 test("formats physical key codes for the interface", () => {

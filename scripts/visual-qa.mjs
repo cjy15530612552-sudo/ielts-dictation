@@ -20,6 +20,25 @@ async function createPage(viewport) {
   return page;
 }
 
+function visualRows(rects) {
+  const rows = [];
+  rects.forEach((rect, index) => {
+    let row = rows.find((candidate) => Math.abs(candidate.y - rect.y) < 2);
+    if (!row) { row = { y: rect.y, indexes: [] }; rows.push(row); }
+    row.indexes.push(index);
+  });
+  return rows.sort((left, right) => left.y - right.y);
+}
+
+function closestHorizontalIndex(rects, sourceIndex, candidates) {
+  const sourceCenter = rects[sourceIndex].x + rects[sourceIndex].width / 2;
+  return candidates.reduce((closest, candidate) => {
+    const candidateCenter = rects[candidate].x + rects[candidate].width / 2;
+    const closestCenter = rects[closest].x + rects[closest].width / 2;
+    return Math.abs(candidateCenter - sourceCenter) < Math.abs(closestCenter - sourceCenter) ? candidate : closest;
+  });
+}
+
 const desktop = await createPage({ width: 1440, height: 1024 });
 desktop.setDefaultTimeout(5000);
 console.log("capture: desktop initial");
@@ -42,11 +61,14 @@ const first = desktop.getByLabel("第 1 个单词");
 const second = desktop.getByLabel("第 2 个单词");
 console.log("interaction: keyboard navigation and playback");
 await first.fill("The");
-await first.press("Space");
-if (!(await second.evaluate((element) => element === document.activeElement))) {
-  throw new Error("Space did not move focus to the next word");
+await second.fill("library");
+await desktop.getByLabel("第 3 个单词").fill("is");
+await second.press("Space");
+const shiftedValues = await Promise.all([1, 2, 3, 4].map((number) => desktop.getByLabel(`第 ${number} 个单词`).inputValue()));
+if (JSON.stringify(shiftedValues) !== JSON.stringify(["The", "", "library", "is"])) {
+  throw new Error(`Space did not insert a gap and shift answers right: ${JSON.stringify(shiftedValues)}`);
 }
-if ((await first.inputValue()) !== "The") throw new Error("Space changed the completed word");
+if (!(await second.evaluate((element) => element === document.activeElement))) throw new Error("Space did not retain the current input focus");
 await second.fill("library");
 await second.press("Tab");
 if ((await second.inputValue()) !== "library") throw new Error("Tab replay lost the current answer");
@@ -96,6 +118,12 @@ const expected = ["The", "library", "is", "located", "on", "the", "second", "flo
 for (let index = 0; index < expected.length; index += 1) {
   await desktop.getByLabel(`第 ${index + 1} 个单词`).fill(expected[index]);
 }
+await desktop.getByLabel("第 3 个单词").press("Space");
+const fullValues = await Promise.all(expected.map((_, index) => desktop.getByLabel(`第 ${index + 1} 个单词`).inputValue()));
+if (JSON.stringify(fullValues) !== JSON.stringify(expected)) throw new Error("Space changed answers when no empty slot remained");
+if (!(await desktop.getByLabel("第 3 个单词").evaluate((element) => element === document.activeElement))) {
+  throw new Error("Space moved focus when no empty slot remained");
+}
 await desktop.getByLabel("第 3 个单词").press("Enter");
 if (!(await desktop.getByLabel("第 4 个单词").evaluate((element) => element === document.activeElement))) {
   throw new Error("Enter before the last word did not move focus to the next word");
@@ -138,11 +166,36 @@ console.log("capture: mobile initial");
 await mobile.goto(baseUrl, { waitUntil: "domcontentloaded" });
 const overflow = await mobile.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 if (overflow > 1) throw new Error(`Mobile layout overflows horizontally by ${overflow}px`);
+const mobileInputs = await mobile.locator(".word-input").all();
+const mobileRects = await Promise.all(mobileInputs.map((input) => input.boundingBox()));
+const rows = visualRows(mobileRects);
+if (rows.length < 3) throw new Error("Mobile input layout did not create enough rows for vertical navigation testing");
+const middleSource = rows[1].indexes[0];
+const expectedUp = closestHorizontalIndex(mobileRects, middleSource, rows[0].indexes);
+await mobileInputs[middleSource].focus();
+await mobileInputs[middleSource].press("ArrowUp");
+if (!(await mobileInputs[expectedUp].evaluate((element) => element === document.activeElement))) {
+  throw new Error("ArrowUp did not select the nearest input in the row above");
+}
+const expectedDown = closestHorizontalIndex(mobileRects, middleSource, rows[2].indexes);
+await mobileInputs[middleSource].focus();
+await mobileInputs[middleSource].press("ArrowDown");
+if (!(await mobileInputs[expectedDown].evaluate((element) => element === document.activeElement))) {
+  throw new Error("ArrowDown did not select the nearest input in the row below");
+}
+const topBoundary = rows[0].indexes[0];
+await mobileInputs[topBoundary].focus();
+await mobileInputs[topBoundary].press("ArrowUp");
+if (!(await mobileInputs[topBoundary].evaluate((element) => element === document.activeElement))) throw new Error("ArrowUp crossed the top boundary");
+const bottomBoundary = rows.at(-1).indexes[0];
+await mobileInputs[bottomBoundary].focus();
+await mobileInputs[bottomBoundary].press("ArrowDown");
+if (!(await mobileInputs[bottomBoundary].evaluate((element) => element === document.activeElement))) throw new Error("ArrowDown crossed the bottom boundary");
 await mobile.screenshot({ path: outputPath("implementation-mobile.png"), fullPage: true });
 
 await writeFile(new URL("browser-check.json", outputDir), JSON.stringify({
   viewport: { desktop: "1440x1024", mobile: "390x844" },
-  interactions: ["Import navigation", "Space advances without changing answers", "Tab", "Escape", "Arrow caret movement", "Arrow boundary input switching", "Backspace", "Enter advances before last word", "Enter checks on last word", "Restart current sentence clears inputs and replays", "Next sentence", "Previous sentence"],
+  interactions: ["Import navigation", "Space inserts a gap and shifts to nearest empty slot", "Space does nothing without a later empty slot", "Tab", "Escape", "Left/right caret movement", "Left/right boundary input switching", "Up/down visual row movement", "Up/down layout boundaries", "Backspace", "Enter advances before last word", "Enter checks on last word", "Restart current sentence clears inputs and replays", "Next sentence", "Previous sentence"],
   consoleErrors: errors,
 }, null, 2));
 

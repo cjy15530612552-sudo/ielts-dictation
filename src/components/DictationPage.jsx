@@ -5,6 +5,8 @@ import { appAssetUrl, completePractice, endPracticeSession, getPractice, savePro
 import { alignTokens } from "../utils/alignTokens.js";
 import { AUTO_PLAY_NEXT, INITIAL_SENTENCE_INDEX, MOCK_PLAYBACK_MS, mockSentences } from "../data/mockSentences.js";
 import { formatKeyCode, loadKeyboardBindings } from "../utils/keyboardBindings.js";
+import { insertAnswerGap } from "../utils/insertAnswerGap.js";
+import { findVerticalInputIndex } from "../utils/verticalInputNavigation.js";
 import { DictationControls } from "./DictationControls.jsx";
 import { ImportButton } from "./ImportButton.jsx";
 import { ProgressIndicator } from "./ProgressIndicator.jsx";
@@ -122,6 +124,17 @@ export function DictationPage() {
   }, [sentence?.id, replayCurrentSentence]);
 
   function updateAnswer(index, value) { setAnswers((current) => current.map((answer, i) => i === index ? value : answer)); }
+  function insertGap(index) {
+    const shifted = insertAnswerGap(answers, index);
+    if (shifted === answers) return;
+    setAnswers(shifted);
+    focusWord(index, "start");
+  }
+  function moveVertical(index, direction) {
+    const rects = inputRefs.current.map((input) => input?.getBoundingClientRect() ?? null);
+    const targetIndex = findVerticalInputIndex(rects, index, direction);
+    if (targetIndex !== index) focusWord(targetIndex, "end");
+  }
   function submitSentence() {
     if (isSubmitted || !sentence) return;
     stopPlayback();
@@ -190,9 +203,9 @@ export function DictationPage() {
       <section className="practice-shell" onKeyDown={handlePracticeKeyDown}>
         <p className="practice-prompt">听写你听到的句子</p><SentencePlayer isPlaying={isPlaying} hasPlayed={hasPlayed} onPlay={replayCurrentSentence} />
         {playbackError && <p className="flow-error playback-error" role="alert">{playbackError}</p>}
-        {!isSubmitted ? <><WordInputRow tokens={sentence.tokens} answers={answers} currentWordIndex={currentWordIndex} inputRefs={inputRefs} slotWidths={slotWidths} disabled={isSubmitted} onAnswerChange={updateAnswer} onFocusWord={setCurrentWordIndex} onMove={(offset, caretPosition) => focusWord(currentWordIndex + offset, caretPosition)} onSubmit={submitSentence} onReplay={replayCurrentSentence} onStop={stopPlayback} bindings={keyboardBindings} /><DictationControls onReplay={replayCurrentSentence} onSubmit={submitSentence} replayShortcut={formatKeyCode(keyboardBindings.replay)} /></> : <SentenceResult result={result} slotWidths={slotWidths} onPrevious={goToPreviousSentence} onReplay={replayCurrentSentence} onRestart={restartCurrentSentence} onNext={goToNextSentence} onWordClick={(word) => setLookup({ word, sentence: sentence.text })} isFirst={sentenceIndex === 0} isLast={isPractice && sentenceIndex === sentences.length - 1} />}
+        {!isSubmitted ? <><WordInputRow tokens={sentence.tokens} answers={answers} currentWordIndex={currentWordIndex} inputRefs={inputRefs} slotWidths={slotWidths} disabled={isSubmitted} onAnswerChange={updateAnswer} onFocusWord={setCurrentWordIndex} onMove={(offset, caretPosition) => focusWord(currentWordIndex + offset, caretPosition)} onInsertGap={insertGap} onMoveVertical={moveVertical} onSubmit={submitSentence} onReplay={replayCurrentSentence} onStop={stopPlayback} bindings={keyboardBindings} /><DictationControls onReplay={replayCurrentSentence} onSubmit={submitSentence} replayShortcut={formatKeyCode(keyboardBindings.replay)} /></> : <SentenceResult result={result} slotWidths={slotWidths} onPrevious={goToPreviousSentence} onReplay={replayCurrentSentence} onRestart={restartCurrentSentence} onNext={goToNextSentence} onWordClick={(word) => setLookup({ word, sentence: sentence.text })} isFirst={sentenceIndex === 0} isLast={isPractice && sentenceIndex === sentences.length - 1} />}
       </section>
-      <footer className="keyboard-footer" aria-label="快捷键说明"><ShortcutHint shortcut={formatKeyCode(keyboardBindings.advance)} label="下一格" /><span className="footer-separator">|</span><ShortcutHint shortcut="← →" label="移动光标 / 跨格" /><span className="footer-separator">|</span><ShortcutHint shortcut={formatKeyCode(keyboardBindings.submit)} label="下一格 / 检查" /><span className="footer-separator">|</span><ShortcutHint shortcut={formatKeyCode(keyboardBindings.stop)} label="停止" /></footer>
+      <footer className="keyboard-footer" aria-label="快捷键说明"><ShortcutHint shortcut={formatKeyCode(keyboardBindings.advance)} label="插入空格" /><span className="footer-separator">|</span><ShortcutHint shortcut="← →" label="移动光标 / 跨格" /><span className="footer-separator">|</span><ShortcutHint shortcut="↑ ↓" label="上下格" /><span className="footer-separator">|</span><ShortcutHint shortcut={formatKeyCode(keyboardBindings.submit)} label="下一格 / 检查" /><span className="footer-separator">|</span><ShortcutHint shortcut={formatKeyCode(keyboardBindings.stop)} label="停止" /></footer>
       {lookup && <WordCard word={lookup.word} sentence={lookup.sentence} practiceId={practiceId} onClose={() => setLookup(null)} />}
     </main>
   );

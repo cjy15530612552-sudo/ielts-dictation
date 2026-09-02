@@ -8,6 +8,8 @@ export function WordInput({
   onChange,
   onFocus,
   onMove,
+  onInsertGap,
+  onMoveVertical,
   onSubmit,
   onReplay,
   onStop,
@@ -20,13 +22,19 @@ export function WordInput({
 
     if (event.code === bindings.advance) {
       event.preventDefault();
-      onMove(1);
+      onInsertGap(index);
     } else if (event.key === "ArrowLeft" && isPlainArrow && !hasSelection && selectionStart === 0) {
       event.preventDefault();
       onMove(-1, "end");
     } else if (event.key === "ArrowRight" && isPlainArrow && !hasSelection && selectionEnd === value.length) {
       event.preventDefault();
       onMove(1, "start");
+    } else if (event.key === "ArrowUp" && isPlainArrow) {
+      event.preventDefault();
+      onMoveVertical(index, -1);
+    } else if (event.key === "ArrowDown" && isPlainArrow) {
+      event.preventDefault();
+      onMoveVertical(index, 1);
     } else if (event.key === "Backspace" && value.length === 0) {
       event.preventDefault();
       onMove(-1, "end");

@@ -7,7 +7,7 @@ export const DEFAULT_KEYBOARD_BINDINGS = Object.freeze({
   stop: "Escape",
 });
 
-export const FIXED_KEY_CODES = new Set(["ArrowLeft", "ArrowRight", "Backspace"]);
+export const FIXED_KEY_CODES = new Set(["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Backspace"]);
 const MODIFIER_KEY_CODES = new Set([
   "AltLeft", "AltRight", "ControlLeft", "ControlRight", "MetaLeft", "MetaRight", "ShiftLeft", "ShiftRight",
 ]);

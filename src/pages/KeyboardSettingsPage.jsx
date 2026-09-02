@@ -11,7 +11,7 @@ import {
 } from "../utils/keyboardBindings.js";
 
 const ACTIONS = [
-  { id: "advance", label: "切换格子", description: "移动到下一个单词输入格" },
+  { id: "advance", label: "插入空格", description: "当前内容向右移动到最近的空格" },
   { id: "submit", label: "下一格 / 检查答案", description: "前往下一格；在最后一格提交并检查整句" },
   { id: "replay", label: "重新播放", description: "重听当前句子并保留输入焦点" },
   { id: "stop", label: "停止播放", description: "停止当前正在播放的语音" },
@@ -28,7 +28,7 @@ export function KeyboardSettingsPage() {
       event.preventDefault();
       event.stopPropagation();
       if (!isBindableKeyboardEvent(event)) {
-        setMessage("左右方向键、Backspace 和组合键用于固定输入操作，不能重新绑定。");
+        setMessage("四个方向键、Backspace 和组合键用于固定输入操作，不能重新绑定。");
         return;
       }
       const result = assignKeyboardBinding(bindings, listeningAction, event.code);
@@ -83,7 +83,7 @@ export function KeyboardSettingsPage() {
           ))}
         </div>
         {message && <p className="keyboard-settings-message" role="status">{message}</p>}
-        <p className="keyboard-fixed-note">固定键位：← / → 在单词内移动光标并在边界跨格；空输入格按 Backspace 返回上一格。</p>
+        <p className="keyboard-fixed-note">固定键位：← / → 在单词内移动光标并在边界跨格；↑ / ↓ 移动到正上方或正下方格子；空输入格按 Backspace 返回上一格。</p>
       </section>
     </main>
   );
