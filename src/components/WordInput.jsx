@@ -9,6 +9,7 @@ export function WordInput({
   onFocus,
   onMove,
   onInsertGap,
+  onRemoveGap,
   onMoveVertical,
   onSubmit,
   onReplay,
@@ -37,7 +38,7 @@ export function WordInput({
       onMoveVertical(index, 1);
     } else if (event.key === "Backspace" && value.length === 0) {
       event.preventDefault();
-      onMove(-1, "end");
+      if (!onRemoveGap(index)) onMove(-1, "end");
     } else if (event.code === bindings.replay) {
       event.preventDefault();
       event.stopPropagation();

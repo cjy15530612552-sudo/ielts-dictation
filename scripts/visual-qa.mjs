@@ -110,8 +110,18 @@ if (!(await second.evaluate((element) => element === document.activeElement && e
 }
 await second.fill("");
 await second.press("Backspace");
-if (!(await first.evaluate((element) => element === document.activeElement))) {
-  throw new Error("Backspace on an empty word did not move focus backward");
+const backspaceShiftedValues = await Promise.all([1, 2, 3, 4].map((number) => desktop.getByLabel(`第 ${number} 个单词`).inputValue()));
+if (JSON.stringify(backspaceShiftedValues) !== JSON.stringify(["The", "library", "is", ""])) {
+  throw new Error(`Backspace did not remove the gap and shift answers left: ${JSON.stringify(backspaceShiftedValues)}`);
+}
+if (!(await second.evaluate((element) => element === document.activeElement))) {
+  throw new Error("Backspace gap removal did not retain the current input focus");
+}
+const finalInput = desktop.getByLabel("第 8 个单词");
+await finalInput.focus();
+await finalInput.press("Backspace");
+if (!(await desktop.getByLabel("第 7 个单词").evaluate((element) => element === document.activeElement))) {
+  throw new Error("Backspace on a trailing empty word did not preserve backward navigation");
 }
 
 const expected = ["The", "library", "is", "located", "on", "the", "second", "floor"];
@@ -195,7 +205,7 @@ await mobile.screenshot({ path: outputPath("implementation-mobile.png"), fullPag
 
 await writeFile(new URL("browser-check.json", outputDir), JSON.stringify({
   viewport: { desktop: "1440x1024", mobile: "390x844" },
-  interactions: ["Import navigation", "Space inserts a gap and shifts to nearest empty slot", "Space does nothing without a later empty slot", "Tab", "Escape", "Left/right caret movement", "Left/right boundary input switching", "Up/down visual row movement", "Up/down layout boundaries", "Backspace", "Enter advances before last word", "Enter checks on last word", "Restart current sentence clears inputs and replays", "Next sentence", "Previous sentence"],
+  interactions: ["Import navigation", "Space inserts a gap and shifts to nearest empty slot", "Space does nothing without a later empty slot", "Tab", "Escape", "Left/right caret movement", "Left/right boundary input switching", "Up/down visual row movement", "Up/down layout boundaries", "Backspace removes an internal gap and shifts answers left", "Backspace keeps backward navigation when no later content exists", "Enter advances before last word", "Enter checks on last word", "Restart current sentence clears inputs and replays", "Next sentence", "Previous sentence"],
   consoleErrors: errors,
 }, null, 2));
 

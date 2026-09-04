@@ -83,7 +83,7 @@ export function KeyboardSettingsPage() {
           ))}
         </div>
         {message && <p className="keyboard-settings-message" role="status">{message}</p>}
-        <p className="keyboard-fixed-note">固定键位：← / → 在单词内移动光标并在边界跨格；↑ / ↓ 移动到正上方或正下方格子；空输入格按 Backspace 返回上一格。</p>
+        <p className="keyboard-fixed-note">固定键位：← / → 在单词内移动光标并在边界跨格；↑ / ↓ 移动到正上方或正下方格子；空输入格按 Backspace 会删除空位并左移后续内容，右侧没有内容时返回上一格。</p>
       </section>
     </main>
   );
