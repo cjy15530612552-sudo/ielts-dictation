@@ -21,6 +21,9 @@ class TtsBusyError(TtsError):
 
 
 class TtsService:
+    transient_attempts = 3
+    retry_base_delay_seconds = 0.75
+
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
         self.output_dir = settings.tts_storage_dir / "playground"
@@ -55,13 +58,21 @@ class TtsService:
         async with self._lock:
             try:
                 async with httpx.AsyncClient(timeout=self.settings.qwen_request_timeout_seconds) as client:
-                    response = await client.post(self.settings.qwen_tts_endpoint, headers=headers, json=payload)
+                    response = await self._request_with_retry(
+                        client,
+                        "POST",
+                        self.settings.qwen_tts_endpoint,
+                        headers=headers,
+                        json=payload,
+                    )
                     self._raise_for_status(response)
                     body = response.json()
                     audio_url = ((body.get("output") or {}).get("audio") or {}).get("url")
                     if not audio_url or not audio_url.startswith(("http://", "https://")):
                         raise TtsError("TTS returned an invalid audio URL.")
-                    audio_response = await client.get(audio_url)
+                    # Retry the temporary audio URL itself so a download interruption does
+                    # not submit the text to the paid generation endpoint a second time.
+                    audio_response = await self._request_with_retry(client, "GET", audio_url)
                     if audio_response.status_code != 200 or not audio_response.content:
                         raise TtsError("The generated audio could not be downloaded.")
             except httpx.TimeoutException as exc:
@@ -76,6 +87,20 @@ class TtsService:
             except OSError as exc:
                 raise TtsError("Generated audio could not be saved.") from exc
         return {"id": audio_id, "filename": filename, "voice": selected_voice, "characters": (body.get("usage") or {}).get("characters")}
+
+    async def _request_with_retry(self, client: httpx.AsyncClient, method: str, url: str, **kwargs) -> httpx.Response:
+        retryable_statuses = {500, 502, 503, 504}
+        for attempt in range(self.transient_attempts):
+            try:
+                response = await client.request(method, url, **kwargs)
+            except (httpx.TimeoutException, httpx.RequestError):
+                if attempt + 1 >= self.transient_attempts:
+                    raise
+            else:
+                if response.status_code not in retryable_statuses or attempt + 1 >= self.transient_attempts:
+                    return response
+            await asyncio.sleep(self.retry_base_delay_seconds * (2**attempt))
+        raise RuntimeError("Unreachable retry state")
 
     @staticmethod
     def _raise_for_status(response: httpx.Response) -> None:
