@@ -8,8 +8,6 @@ export function WordInput({
   onChange,
   onFocus,
   onMove,
-  onInsertGap,
-  onRemoveGap,
   onMoveVertical,
   onSubmit,
   onReplay,
@@ -17,19 +15,20 @@ export function WordInput({
   bindings,
 }) {
   function handleKeyDown(event) {
+    if (event.isComposing || event.nativeEvent?.isComposing) return;
     const { selectionStart, selectionEnd } = event.currentTarget;
     const hasSelection = selectionStart !== selectionEnd;
     const isPlainArrow = !event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey;
 
     if (event.code === bindings.advance) {
       event.preventDefault();
-      onInsertGap(index);
+      onMove(index, 1, "start");
     } else if (event.key === "ArrowLeft" && isPlainArrow && !hasSelection && selectionStart === 0) {
       event.preventDefault();
-      onMove(-1, "end");
+      onMove(index, -1, "end");
     } else if (event.key === "ArrowRight" && isPlainArrow && !hasSelection && selectionEnd === value.length) {
       event.preventDefault();
-      onMove(1, "start");
+      onMove(index, 1, "start");
     } else if (event.key === "ArrowUp" && isPlainArrow) {
       event.preventDefault();
       onMoveVertical(index, -1);
@@ -37,8 +36,7 @@ export function WordInput({
       event.preventDefault();
       onMoveVertical(index, 1);
     } else if (event.key === "Backspace" && value.length === 0) {
-      event.preventDefault();
-      if (!onRemoveGap(index)) onMove(-1, "end");
+      if (onMove(index, -1, "end")) event.preventDefault();
     } else if (event.code === bindings.replay) {
       event.preventDefault();
       event.stopPropagation();

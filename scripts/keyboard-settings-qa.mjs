@@ -25,15 +25,15 @@ await desktop.goto(baseUrl, { waitUntil: "domcontentloaded" });
 await desktop.getByRole("link", { name: "键位设置" }).click();
 await desktop.waitForURL("**/keyboard-settings");
 await desktop.getByRole("heading", { name: "键位设置" }).waitFor();
-for (const [action, key] of [["插入空格", "Space"], ["下一格 / 检查答案", "Enter"], ["重新播放", "Tab"], ["停止播放", "Esc"]]) {
+for (const [action, key] of [["切换到下一格", "Space"], ["下一格 / 检查答案", "Enter"], ["重新播放", "Tab"], ["停止播放", "Esc"]]) {
   await desktop.getByRole("button", { name: `${action}键位，当前 ${key}` }).waitFor();
 }
 
-const advanceKey = desktop.getByRole("button", { name: "插入空格键位，当前 Space" });
+const advanceKey = desktop.getByRole("button", { name: "切换到下一格键位，当前 Space" });
 await advanceKey.click();
 await advanceKey.press("n");
-await desktop.getByText("插入空格已设为 N。").waitFor();
-await desktop.getByRole("button", { name: "插入空格键位，当前 N" }).waitFor();
+await desktop.getByText("切换到下一格已设为 N。").waitFor();
+await desktop.getByRole("button", { name: "切换到下一格键位，当前 N" }).waitFor();
 await desktop.screenshot({ path: outputPath("keyboard-settings.png"), fullPage: true });
 
 await desktop.goto(`${baseUrl}/dictation`, { waitUntil: "domcontentloaded" });
@@ -42,17 +42,17 @@ const second = desktop.getByLabel("第 2 个单词");
 await first.fill("The");
 await second.fill("library");
 await first.press("n");
-const customGapValues = await Promise.all([1, 2, 3].map((number) => desktop.getByLabel(`第 ${number} 个单词`).inputValue()));
-if (JSON.stringify(customGapValues) !== JSON.stringify(["", "The", "library"])) throw new Error("Custom gap key did not shift answers");
-if (!(await first.evaluate((element) => element === document.activeElement))) throw new Error("Custom gap key did not retain focus");
+const customAdvanceValues = await Promise.all([1, 2, 3].map((number) => desktop.getByLabel(`第 ${number} 个单词`).inputValue()));
+if (JSON.stringify(customAdvanceValues) !== JSON.stringify(["The", "library", ""])) throw new Error("Custom advance key changed answers");
+if (!(await second.evaluate((element) => element === document.activeElement))) throw new Error("Custom advance key did not move focus");
 
 await desktop.goto(`${baseUrl}/keyboard-settings`, { waitUntil: "domcontentloaded" });
-await desktop.getByRole("button", { name: "插入空格键位，当前 N" }).waitFor();
+await desktop.getByRole("button", { name: "切换到下一格键位，当前 N" }).waitFor();
 const submitKey = desktop.getByRole("button", { name: "下一格 / 检查答案键位，当前 Enter" });
 await submitKey.click();
 await submitKey.press("n");
-await desktop.getByText("下一格 / 检查答案已设为 N，并与插入空格交换键位。").waitFor();
-await desktop.getByRole("button", { name: "插入空格键位，当前 Enter" }).waitFor();
+await desktop.getByText("下一格 / 检查答案已设为 N，并与切换到下一格交换键位。").waitFor();
+await desktop.getByRole("button", { name: "切换到下一格键位，当前 Enter" }).waitFor();
 await desktop.getByRole("button", { name: "下一格 / 检查答案键位，当前 N" }).waitFor();
 await desktop.goto(`${baseUrl}/dictation`, { waitUntil: "domcontentloaded" });
 await desktop.getByLabel("第 1 个单词").fill("The");
@@ -79,7 +79,7 @@ await mobile.screenshot({ path: outputPath("keyboard-settings-mobile.png"), full
 
 await writeFile(outputPath("keyboard-settings-browser-check.json"), JSON.stringify({
   route: "/keyboard-settings",
-  validated: ["home navigation", "default bindings", "click then press to bind", "dictation uses custom gap key", "conflict swaps bindings", "custom submit key advances before last input", "custom submit key checks on last input", "persistence", "restore defaults", "mobile overflow"],
+  validated: ["home navigation", "default bindings", "click then press to bind", "dictation uses custom advance key", "conflict swaps bindings", "custom submit key advances before last input", "custom submit key checks on last input", "persistence", "restore defaults", "mobile overflow"],
   consoleErrors: errors,
 }, null, 2));
 await browser.close();

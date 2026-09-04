@@ -11,7 +11,7 @@ import {
 } from "../utils/keyboardBindings.js";
 
 const ACTIONS = [
-  { id: "advance", label: "插入空格", description: "当前内容向右移动到最近的空格" },
+  { id: "advance", label: "切换到下一格", description: "保留当前内容并将光标移动到下一个输入格" },
   { id: "submit", label: "下一格 / 检查答案", description: "前往下一格；在最后一格提交并检查整句" },
   { id: "replay", label: "重新播放", description: "重听当前句子并保留输入焦点" },
   { id: "stop", label: "停止播放", description: "停止当前正在播放的语音" },
@@ -83,7 +83,7 @@ export function KeyboardSettingsPage() {
           ))}
         </div>
         {message && <p className="keyboard-settings-message" role="status">{message}</p>}
-        <p className="keyboard-fixed-note">固定键位：← / → 在单词内移动光标并在边界跨格；↑ / ↓ 移动到正上方或正下方格子；空输入格按 Backspace 会删除空位并左移后续内容，右侧没有内容时返回上一格。</p>
+        <p className="keyboard-fixed-note">固定键位：← / → 在单词内移动光标并在边界跨格；↑ / ↓ 移动到正上方或正下方格子；空输入格按 Backspace 返回上一个可编辑格，并将光标放在文本末尾。</p>
       </section>
     </main>
   );

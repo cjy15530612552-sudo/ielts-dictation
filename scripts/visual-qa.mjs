@@ -60,15 +60,80 @@ if ((await importLink.getAttribute("href")) !== "/practice/new") {
 const first = desktop.getByLabel("第 1 个单词");
 const second = desktop.getByLabel("第 2 个单词");
 console.log("interaction: keyboard navigation and playback");
-await first.fill("The");
-await second.fill("library");
-await desktop.getByLabel("第 3 个单词").fill("is");
-await second.press("Space");
-const shiftedValues = await Promise.all([1, 2, 3, 4].map((number) => desktop.getByLabel(`第 ${number} 个单词`).inputValue()));
-if (JSON.stringify(shiftedValues) !== JSON.stringify(["The", "", "library", "is"])) {
-  throw new Error(`Space did not insert a gap and shift answers right: ${JSON.stringify(shiftedValues)}`);
+const third = desktop.getByLabel("第 3 个单词");
+const fourth = desktop.getByLabel("第 4 个单词");
+const fifth = desktop.getByLabel("第 5 个单词");
+const sixth = desktop.getByLabel("第 6 个单词");
+const finalInput = desktop.getByLabel("第 8 个单词");
+
+await first.fill("if");
+await first.press("Space");
+if ((await first.inputValue()) !== "if") throw new Error("Space changed the current answer");
+if (!(await second.evaluate((element) => element === document.activeElement && element.selectionStart === 0))) {
+  throw new Error("Space did not move focus to the next input");
 }
-if (!(await second.evaluate((element) => element === document.activeElement))) throw new Error("Space did not retain the current input focus");
+await second.fill("repeated");
+await second.press("Space");
+if ((await second.inputValue()) !== "repeated") throw new Error("Space did not preserve a completed answer");
+if (!(await third.evaluate((element) => element === document.activeElement))) throw new Error("Space did not advance after a completed answer");
+await third.press("Space");
+if (!(await fourth.evaluate((element) => element === document.activeElement))) throw new Error("Space did not advance from an empty input");
+
+await third.fill("enough");
+await third.press("Space");
+await fourth.press("Backspace");
+if (!(await third.evaluate((element) => element === document.activeElement && element.selectionStart === element.value.length))) {
+  throw new Error("Backspace from an empty input did not return to the previous answer's end");
+}
+if ((await third.inputValue()) !== "enough") throw new Error("Backspace from an empty input deleted the previous answer");
+await third.press("Backspace");
+if ((await third.inputValue()) !== "enoug") throw new Error("Backspace did not normally delete a character in a non-empty input");
+await third.fill("");
+await third.press("Backspace");
+if (!(await second.evaluate((element) => element === document.activeElement && element.selectionStart === element.value.length))) {
+  throw new Error("Backspace did not move to the preceding input after the current answer became empty");
+}
+if ((await second.inputValue()) !== "repeated") throw new Error("Backward navigation changed the preceding answer");
+
+await first.focus();
+await first.evaluate((element) => element.setSelectionRange(0, 0));
+await first.press("Backspace");
+if (!(await first.evaluate((element) => element === document.activeElement))) throw new Error("Backspace escaped the first input boundary");
+
+await fourth.evaluate((element) => { element.disabled = true; });
+await fifth.evaluate((element) => { element.hidden = true; });
+await third.focus();
+await third.press("Space");
+if (!(await sixth.evaluate((element) => element === document.activeElement))) throw new Error("Space did not skip disabled and hidden inputs");
+await sixth.press("Backspace");
+if (!(await third.evaluate((element) => element === document.activeElement))) throw new Error("Backspace did not skip disabled and hidden inputs");
+await fourth.evaluate((element) => { element.disabled = false; });
+await fifth.evaluate((element) => { element.hidden = false; });
+
+await fourth.focus();
+await fourth.evaluate((element) => {
+  element.dispatchEvent(new KeyboardEvent("keydown", { key: " ", code: "Space", isComposing: true, bubbles: true, cancelable: true }));
+});
+if (!(await fourth.evaluate((element) => element === document.activeElement))) throw new Error("IME composing Space changed inputs");
+await fourth.evaluate((element) => {
+  element.dispatchEvent(new KeyboardEvent("keydown", { key: "Backspace", code: "Backspace", isComposing: true, bubbles: true, cancelable: true }));
+});
+if (!(await fourth.evaluate((element) => element === document.activeElement))) throw new Error("IME composing Backspace changed inputs");
+
+await finalInput.focus();
+const scrollBeforeFinalSpace = await desktop.evaluate(() => window.scrollY);
+await finalInput.press("Space");
+if (!(await finalInput.evaluate((element) => element === document.activeElement))) throw new Error("Space escaped the final input boundary");
+if ((await desktop.evaluate(() => window.scrollY)) !== scrollBeforeFinalSpace) throw new Error("Space scrolled the page at the final input");
+
+await desktop.reload({ waitUntil: "domcontentloaded" });
+await fifth.focus();
+await fifth.press("Backspace");
+await desktop.keyboard.press("Backspace");
+await desktop.keyboard.press("Backspace");
+if (!(await second.evaluate((element) => element === document.activeElement))) throw new Error("Rapid Backspace presses did not traverse empty inputs");
+
+await first.fill("The");
 await second.fill("library");
 await second.press("Tab");
 if ((await second.inputValue()) !== "library") throw new Error("Tab replay lost the current answer");
@@ -108,31 +173,15 @@ await second.press("ArrowRight");
 if (!(await second.evaluate((element) => element === document.activeElement && element.selectionStart === 3))) {
   throw new Error("ArrowRight did not move the caret within the current word");
 }
-await second.fill("");
-await second.press("Backspace");
-const backspaceShiftedValues = await Promise.all([1, 2, 3, 4].map((number) => desktop.getByLabel(`第 ${number} 个单词`).inputValue()));
-if (JSON.stringify(backspaceShiftedValues) !== JSON.stringify(["The", "library", "is", ""])) {
-  throw new Error(`Backspace did not remove the gap and shift answers left: ${JSON.stringify(backspaceShiftedValues)}`);
-}
-if (!(await second.evaluate((element) => element === document.activeElement))) {
-  throw new Error("Backspace gap removal did not retain the current input focus");
-}
-const finalInput = desktop.getByLabel("第 8 个单词");
-await finalInput.focus();
-await finalInput.press("Backspace");
-if (!(await desktop.getByLabel("第 7 个单词").evaluate((element) => element === document.activeElement))) {
-  throw new Error("Backspace on a trailing empty word did not preserve backward navigation");
-}
-
 const expected = ["The", "library", "is", "located", "on", "the", "second", "floor"];
 for (let index = 0; index < expected.length; index += 1) {
   await desktop.getByLabel(`第 ${index + 1} 个单词`).fill(expected[index]);
 }
 await desktop.getByLabel("第 3 个单词").press("Space");
 const fullValues = await Promise.all(expected.map((_, index) => desktop.getByLabel(`第 ${index + 1} 个单词`).inputValue()));
-if (JSON.stringify(fullValues) !== JSON.stringify(expected)) throw new Error("Space changed answers when no empty slot remained");
-if (!(await desktop.getByLabel("第 3 个单词").evaluate((element) => element === document.activeElement))) {
-  throw new Error("Space moved focus when no empty slot remained");
+if (JSON.stringify(fullValues) !== JSON.stringify(expected)) throw new Error("Space changed answers while advancing");
+if (!(await desktop.getByLabel("第 4 个单词").evaluate((element) => element === document.activeElement))) {
+  throw new Error("Space did not advance when later inputs were already filled");
 }
 await desktop.getByLabel("第 3 个单词").press("Enter");
 if (!(await desktop.getByLabel("第 4 个单词").evaluate((element) => element === document.activeElement))) {
@@ -205,7 +254,7 @@ await mobile.screenshot({ path: outputPath("implementation-mobile.png"), fullPag
 
 await writeFile(new URL("browser-check.json", outputDir), JSON.stringify({
   viewport: { desktop: "1440x1024", mobile: "390x844" },
-  interactions: ["Import navigation", "Space inserts a gap and shifts to nearest empty slot", "Space does nothing without a later empty slot", "Tab", "Escape", "Left/right caret movement", "Left/right boundary input switching", "Up/down visual row movement", "Up/down layout boundaries", "Backspace removes an internal gap and shifts answers left", "Backspace keeps backward navigation when no later content exists", "Enter advances before last word", "Enter checks on last word", "Restart current sentence clears inputs and replays", "Next sentence", "Previous sentence"],
+  interactions: ["Import navigation", "Space advances and preserves filled or empty answers", "Space final-input boundary and scroll prevention", "Backspace edits non-empty answers normally", "Backspace returns from empty inputs without deleting prior answers", "Rapid backward traversal", "Disabled and hidden input skipping", "IME composition guard", "Tab", "Escape", "Left/right caret movement", "Left/right boundary input switching", "Up/down visual row movement", "Up/down layout boundaries", "Enter advances before last word", "Enter checks on last word", "Restart current sentence clears inputs and replays", "Next sentence", "Previous sentence"],
   consoleErrors: errors,
 }, null, 2));
 

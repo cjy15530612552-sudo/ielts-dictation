@@ -10,8 +10,6 @@ export function WordInputRow({
   onAnswerChange,
   onFocusWord,
   onMove,
-  onInsertGap,
-  onRemoveGap,
   onMoveVertical,
   onSubmit,
   onReplay,
@@ -32,10 +30,8 @@ export function WordInputRow({
           onChange={(value) => onAnswerChange(index, value)}
           onFocus={() => onFocusWord(index)}
           onMove={onMove}
-          onInsertGap={onInsertGap}
-          onRemoveGap={onRemoveGap}
           onMoveVertical={onMoveVertical}
-          onSubmit={(submittedIndex) => submittedIndex === tokens.length - 1 ? onSubmit() : onMove(1)}
+          onSubmit={(submittedIndex) => submittedIndex === tokens.length - 1 ? onSubmit() : onMove(submittedIndex, 1, "start")}
           onReplay={onReplay}
           onStop={onStop}
           bindings={bindings}
