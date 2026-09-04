@@ -72,7 +72,18 @@ async function createPage(viewport) {
     if (route.request().method() === "POST") {
       const body = route.request().postDataJSON();
       const item = { ...body, id: "favorite-1", created_at: "2026-08-31T00:00:00Z", practice_name: "剑雅18 Test 1 Part 4", audio_url: "/audio/playground/good.mp3", audio_status: "ready", audio_error: null };
-      favorites = [item];
+      const second = {
+        ...item,
+        id: "favorite-2",
+        word: "Morning",
+        lemma: "morning",
+        phonetic_uk: "/ˈmɔːnɪŋ/",
+        part_of_speech: "noun",
+        meaning_zh: "早晨",
+        meaning_in_context: "问候中表示早晨",
+        audio_url: "/audio/playground/morning.mp3",
+      };
+      favorites = [item, second];
       return route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ item, created: true }) });
     }
     if (url.pathname.endsWith("/groups")) {
@@ -179,12 +190,57 @@ await desktop.getByRole("heading", { name: "剑雅18 Test 1 Part 4" }).waitFor()
 await desktop.getByRole("heading", { name: "Good" }).waitFor();
 await desktop.getByRole("button", { name: "播放 Good 发音" }).waitFor();
 await desktop.screenshot({ path: outputPath("practice-vocabulary.png"), fullPage: true });
+await desktop.evaluate(() => {
+  window.__vocabularyAudioUrls = [];
+  window.Audio = class MockAudio {
+    constructor(src) { this.src = src; }
+    addEventListener() {}
+    pause() {}
+    play() {
+      window.__vocabularyAudioUrls.push(this.src);
+      return Promise.resolve();
+    }
+  };
+});
+await desktop.getByRole("button", { name: "进行听写" }).click();
+await desktop.getByRole("heading", { name: "听一听这个单词" }).waitFor();
+await desktop.getByText("1 / 2").waitFor();
+await desktop.screenshot({ path: outputPath("vocabulary-dictation.png"), fullPage: true });
+if (await desktop.getByRole("heading", { name: "Good" }).count()) throw new Error("The drill revealed the word before an answer was chosen");
+await desktop.getByRole("button", { name: /^理解/ }).click();
+await desktop.getByText("2 / 2").waitFor();
+if ((await desktop.evaluate(() => window.__vocabularyAudioUrls.length)) !== 2) throw new Error("Understanding did not automatically play the next word");
+await desktop.getByRole("button", { name: /^不理解/ }).click();
+await desktop.getByRole("heading", { name: "Morning" }).waitFor();
+await desktop.getByRole("button", { name: "完成" }).click();
+await desktop.getByRole("heading", { name: "本轮听写完成" }).waitFor();
+await desktop.getByText("理解 1 个 · 需要复习 1 个").waitFor();
+await desktop.screenshot({ path: outputPath("vocabulary-dictation-complete.png"), fullPage: true });
+await desktop.getByRole("button", { name: "再来一遍" }).click();
+await desktop.getByText("1 / 2").waitFor();
+await desktop.getByRole("button", { name: "返回单词本" }).click();
+await desktop.getByRole("heading", { name: "Good" }).waitFor();
 
 const mobile = await createPage({ width: 390, height: 844 });
 await mobile.goto(`${baseUrl}/practice/new`, { waitUntil: "domcontentloaded" });
 const overflow = await mobile.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 if (overflow > 1) throw new Error(`Mobile upload layout overflows by ${overflow}px`);
 await mobile.screenshot({ path: outputPath("transcript-upload-mobile.png"), fullPage: true });
+
+const vocabularyMobile = await createPage({ width: 390, height: 844 });
+await vocabularyMobile.goto(`${baseUrl}/vocabulary?practiceId=practice-qa`, { waitUntil: "domcontentloaded" });
+await vocabularyMobile.evaluate(() => {
+  window.Audio = class MockAudio {
+    addEventListener() {}
+    pause() {}
+    play() { return Promise.resolve(); }
+  };
+});
+await vocabularyMobile.getByRole("button", { name: "进行听写" }).click();
+await vocabularyMobile.getByRole("heading", { name: "听一听这个单词" }).waitFor();
+const vocabularyOverflow = await vocabularyMobile.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+if (vocabularyOverflow > 1) throw new Error(`Mobile vocabulary drill overflows by ${vocabularyOverflow}px`);
+await vocabularyMobile.screenshot({ path: outputPath("vocabulary-dictation-mobile.png"), fullPage: true });
 
 const linkage = await createPage({ width: 1100, height: 800 });
 await linkage.goto(`${baseUrl}/practice/new`, { waitUntil: "domcontentloaded" });
@@ -195,7 +251,7 @@ if ((await linkage.getByLabel("IELTS Mode").inputValue()) !== "part3") throw new
 
 await writeFile(outputPath("transcript-browser-check.json"), JSON.stringify({
   routes: ["/practice/new", "/transcript/session-qa/review", "/"],
-  validated: ["clipboard image paste", "1-6 file limit", "practice naming", "Part persistence", "Part-to-Voice-Lab linkage", "thumbnail order", "analyze navigation", "editable transcript", "structured JSON", "confirmation save", "home insertion", "practice restart", "practice settings return to transcript review", "progress resume route", "context word card", "favorite save with generated pronunciation", "practice vocabulary grouping", "practice vocabulary filtering", "vocabulary pronunciation control", "mobile overflow"],
+  validated: ["clipboard image paste", "1-6 file limit", "practice naming", "Part persistence", "Part-to-Voice-Lab linkage", "thumbnail order", "analyze navigation", "editable transcript", "structured JSON", "confirmation save", "home insertion", "practice restart", "practice settings return to transcript review", "progress resume route", "context word card", "favorite save with generated pronunciation", "practice vocabulary grouping", "practice vocabulary filtering", "vocabulary pronunciation control", "vocabulary dictation start", "understood auto-advance", "not-understood reveal", "vocabulary dictation completion", "vocabulary dictation restart", "mobile vocabulary dictation", "mobile overflow"],
   consoleErrors: errors,
 }, null, 2));
 await browser.close();

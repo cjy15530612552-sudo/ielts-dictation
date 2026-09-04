@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { PiPause, PiSpeakerHigh, PiStarFill, PiTrash } from "react-icons/pi";
+import { PiHeadphones, PiPause, PiSpeakerHigh, PiStarFill, PiTrash } from "react-icons/pi";
 import { appAssetUrl, deleteFavorite, generateFavoriteAudio, getPractice, listVocabulary } from "../api/appApi.js";
 import { AppHeader } from "../components/AppHeader.jsx";
+import { VocabularyDictation } from "../components/VocabularyDictation.jsx";
 import { WordCard } from "../components/WordCard.jsx";
 import { formatLocalTime } from "../utils/formatLocalTime.js";
 
@@ -16,6 +17,7 @@ export function VocabularyPage() {
   const [error, setError] = useState("");
   const [playingId, setPlayingId] = useState(null);
   const [generatingId, setGeneratingId] = useState(null);
+  const [isDictating, setIsDictating] = useState(false);
   const audioRef = useRef(null);
   const load = async () => {
     setError("");
@@ -31,6 +33,11 @@ export function VocabularyPage() {
     }
   };
   useEffect(() => { load(); }, [practiceId, unassigned]);
+  useEffect(() => {
+    audioRef.current?.pause();
+    setPlayingId(null);
+    setIsDictating(false);
+  }, [practiceId, unassigned]);
   useEffect(() => () => audioRef.current?.pause(), []);
 
   async function remove(id) {
@@ -43,11 +50,15 @@ export function VocabularyPage() {
     if (selected?.id === id) setSelected(null);
   }
 
-  async function playPronunciation(word) {
+  function stopPronunciation() {
+    audioRef.current?.pause();
+    setPlayingId(null);
+  }
+
+  async function playPronunciation(word, toggle = true) {
     setError("");
-    if (playingId === word.id && audioRef.current) {
-      audioRef.current.pause();
-      setPlayingId(null);
+    if (toggle && playingId === word.id && audioRef.current) {
+      stopPronunciation();
       return;
     }
     audioRef.current?.pause();
@@ -78,13 +89,51 @@ export function VocabularyPage() {
     }
   }
 
+  function startDictation() {
+    if (words.length === 0) return;
+    setIsDictating(true);
+    playPronunciation(words[0], false);
+  }
+
+  function exitDictation() {
+    stopPronunciation();
+    setError("");
+    setIsDictating(false);
+  }
+
+  if (isDictating && words.length > 0) {
+    return (
+      <main className="home-page vocabulary-page vocabulary-dictation-page">
+        <AppHeader />
+        <VocabularyDictation
+          words={words}
+          title={practiceName || "收藏单词"}
+          onExit={exitDictation}
+          onPlay={(word) => playPronunciation(word, false)}
+          onStop={stopPronunciation}
+          audioBusy={generatingId !== null}
+          audioError={error}
+        />
+      </main>
+    );
+  }
+
   return (
     <main className="home-page vocabulary-page">
       <AppHeader />
       <section className="page-title-block vocabulary-title-block">
-        <p className="flow-eyebrow">VOCABULARY</p>
-        <h1>{practiceName || "单词本"}</h1>
-        <p>{practiceId ? "仅显示这个练习中收藏的单词。" : unassigned ? "未关联到具体练习的收藏单词。" : "保留单词在真实听力语境中的含义。"}</p>
+        <div className="vocabulary-title-row">
+          <div className="vocabulary-title-copy">
+            <p className="flow-eyebrow">VOCABULARY</p>
+            <h1>{practiceName || "单词本"}</h1>
+            <p>{practiceId ? "仅显示这个练习中收藏的单词。" : unassigned ? "未关联到具体练习的收藏单词。" : "保留单词在真实听力语境中的含义。"}</p>
+          </div>
+          {words.length > 0 && (
+            <button className="vocabulary-dictation-start" type="button" onClick={startDictation}>
+              <PiHeadphones />进行听写
+            </button>
+          )}
+        </div>
         {(practiceId || unassigned) && <Link className="text-action" to="/vocabulary">查看全部收藏</Link>}
       </section>
       {error && <p className="flow-error">{error}</p>}
