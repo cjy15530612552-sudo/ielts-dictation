@@ -146,15 +146,17 @@ button:focus-visible {
   justify-content: center;
   background: rgba(255, 255, 255, 0.35);
   text-align: center;
-  transition: border-color 150ms ease, background 150ms ease;
+  outline: none;
+  transition: border-color 150ms ease, background 150ms ease, box-shadow 150ms ease;
 }
-.upload-dropzone.is-dragging {
+.upload-dropzone.is-dragging, .upload-dropzone:focus {
   border-color: var(--accent);
   background: rgba(83, 104, 91, 0.06);
 }
+.upload-dropzone:focus { box-shadow: 0 0 0 3px rgba(83, 104, 91, 0.1); }
 .upload-dropzone > svg { color: #66746b; font-size: 35px; }
 .upload-dropzone > p { margin: 17px 0 5px; font-size: 18px; font-weight: 560; }
-.upload-dropzone > span { margin-bottom: 14px; color: #a0a39f; font-size: 13px; }
+.upload-dropzone > span { margin-bottom: 14px; color: #868c86; font-size: 13px; }
 .upload-dropzone > small { margin-top: 19px; color: #929691; font-size: 12px; }
 .secondary-button {
   min-height: 42px;

@@ -112,9 +112,25 @@ const desktop = await createPage({ width: 1440, height: 1024 });
 await desktop.goto(`${baseUrl}/practice/new`, { waitUntil: "domcontentloaded" });
 await desktop.getByLabel("练习名称").fill("剑雅18 Test 1 Part 4");
 await desktop.getByLabel("Part", { exact: true }).selectOption("part4");
+const dropzone = desktop.getByRole("region", { name: "上传截图区域，可拖拽、选择或粘贴图片" });
+await dropzone.getByText("拖拽截图到这里").click();
+if (!await dropzone.evaluate((element) => element === document.activeElement)) {
+  throw new Error("Clicking upload content did not focus the paste target");
+}
+await desktop.evaluate(() => {
+  const clipboardData = new DataTransfer();
+  clipboardData.items.add(new File(["clipboard image"], "clipboard.png", { type: "image/png" }));
+  document.querySelector(".upload-dropzone").dispatchEvent(new ClipboardEvent("paste", {
+    bubbles: true,
+    cancelable: true,
+    clipboardData,
+  }));
+});
+await desktop.getByText("1 / 6").waitFor();
+await desktop.getByAltText("第 1 张：clipboard.png").waitFor();
 const input = desktop.getByLabel("选择 IELTS 原文截图");
 await input.setInputFiles([imageFile(1), imageFile(2)]);
-await desktop.getByText("2 / 6").waitFor();
+await desktop.getByText("3 / 6").waitFor();
 await desktop.screenshot({ path: outputPath("transcript-upload.png"), fullPage: true });
 
 await input.setInputFiles(Array.from({ length: 5 }, (_, index) => imageFile(index + 3)));
@@ -179,7 +195,7 @@ if ((await linkage.getByLabel("IELTS Mode").inputValue()) !== "part3") throw new
 
 await writeFile(outputPath("transcript-browser-check.json"), JSON.stringify({
   routes: ["/practice/new", "/transcript/session-qa/review", "/"],
-  validated: ["1-6 file limit", "practice naming", "Part persistence", "Part-to-Voice-Lab linkage", "thumbnail order", "analyze navigation", "editable transcript", "structured JSON", "confirmation save", "home insertion", "practice restart", "practice settings return to transcript review", "progress resume route", "context word card", "favorite save with generated pronunciation", "practice vocabulary grouping", "practice vocabulary filtering", "vocabulary pronunciation control", "mobile overflow"],
+  validated: ["clipboard image paste", "1-6 file limit", "practice naming", "Part persistence", "Part-to-Voice-Lab linkage", "thumbnail order", "analyze navigation", "editable transcript", "structured JSON", "confirmation save", "home insertion", "practice restart", "practice settings return to transcript review", "progress resume route", "context word card", "favorite save with generated pronunciation", "practice vocabulary grouping", "practice vocabulary filtering", "vocabulary pronunciation control", "mobile overflow"],
   consoleErrors: errors,
 }, null, 2));
 await browser.close();

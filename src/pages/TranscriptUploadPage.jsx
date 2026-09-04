@@ -16,6 +16,7 @@ import { analyzeTranscript, uploadTranscriptImages } from "../api/transcriptApi.
 import {
   appAssetUrl, createPractice, deletePractice, generateTtsVersion, listTtsSettings,
 } from "../api/appApi.js";
+import { getClipboardImageFiles } from "../utils/clipboardImages.js";
 
 const ACCEPTED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const ACCEPTED_EXTENSIONS = /\.(jpe?g|png|webp)$/i;
@@ -178,6 +179,17 @@ export function TranscriptUploadPage() {
     if (event.dataTransfer.files?.length) addFiles(event.dataTransfer.files);
   }
 
+  function handlePaste(event) {
+    if (isBusy) return;
+    const clipboardFiles = getClipboardImageFiles(event.clipboardData);
+    if (clipboardFiles.length === 0) {
+      setError("剪贴板中没有可上传的图片，请先复制一张 JPG、PNG 或 WebP 图片。");
+      return;
+    }
+    event.preventDefault();
+    addFiles(clipboardFiles);
+  }
+
   async function startRecognition() {
     if (items.length === 0 || !practiceName.trim() || phase !== "idle") return;
     setError("");
@@ -240,16 +252,23 @@ export function TranscriptUploadPage() {
 
         <div
           className={`upload-dropzone${isDraggingFiles ? " is-dragging" : ""}`}
+          role="region"
+          aria-label="上传截图区域，可拖拽、选择或粘贴图片"
+          tabIndex={isBusy ? -1 : 0}
+          onClick={(event) => {
+            if (!event.target.closest("button, input")) event.currentTarget.focus();
+          }}
           onDragEnter={(event) => { event.preventDefault(); setIsDraggingFiles(true); }}
           onDragOver={(event) => event.preventDefault()}
           onDragLeave={(event) => {
             if (!event.currentTarget.contains(event.relatedTarget)) setIsDraggingFiles(false);
           }}
           onDrop={handleDrop}
+          onPaste={handlePaste}
         >
           <PiImageSquare aria-hidden="true" />
           <p>拖拽截图到这里</p>
-          <span>或</span>
+          <span>点击此区域后按 Ctrl+V 粘贴，或</span>
           <button type="button" className="secondary-button" onClick={() => fileInputRef.current?.click()}>
             <PiUploadSimple aria-hidden="true" />
             选择图片

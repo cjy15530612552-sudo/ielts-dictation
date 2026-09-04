@@ -4,7 +4,7 @@
 
 ## 功能
 
-- 上传 1–6 张连续 Transcript 截图并保持顺序
+- 拖拽、选择或从剪贴板粘贴 1–6 张连续 Transcript 截图并保持顺序
 - `qwen3-vl-plus` 图片识别和人工校对
 - 按句号、问号和感叹号规范化为“一条 segment 一句话”
 - Part 1–4 模式及各 Part 独立语音配置
@@ -98,7 +98,7 @@ VITE_API_BASE_URL=https://api.example.com npm run build
 ## 新建练习流程
 
 1. 输入练习名称并选择 Part 1–4。
-2. 上传 Transcript 截图并开始识别。
+2. 拖拽、选择图片，或点击上传区域后按 `Ctrl+V` 粘贴剪贴板中的 Transcript 截图，再开始识别。
 3. 校对结构化 Transcript；系统保证一个 segment 只包含一句话。
 4. 点击“确认原文并生成语音”。
 5. 后端批量生成全部句子音频，并验证音频数量与句子数量一致。
